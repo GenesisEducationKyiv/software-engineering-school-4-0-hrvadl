@@ -3,6 +3,7 @@ module github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw
 go 1.22.0
 
 require (
+	github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos v0.0.0-20240609091034-5fa68fbc7fca
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
 	go.uber.org/mock v0.4.0
 	google.golang.org/grpc v1.64.0

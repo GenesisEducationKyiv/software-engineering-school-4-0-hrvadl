@@ -3,9 +3,9 @@ module github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/gw
 go 1.22.0
 
 require (
+	github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos v0.0.0-20240609091034-5fa68fbc7fca
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
-	github.com/hrvadl/converter/protos v0.0.0-20240518194626-a433395afb0b
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.3
 	go.uber.org/mock v0.4.0
