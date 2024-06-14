@@ -10,7 +10,7 @@ jobs:
   integration:
     name: Integration Tests
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       SUB_TEST_MYSQL_ROOT_PASSWORD: "password"
       SUB_TEST_MYSQL_DATABASE: "converter"
