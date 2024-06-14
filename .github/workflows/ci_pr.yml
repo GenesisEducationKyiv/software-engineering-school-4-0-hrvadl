@@ -39,5 +39,8 @@ jobs:
         with:
           version: 3.x
 
+      - name: Mailpit server for Github actions
+        run: docker run -d --name=mailpit --restart unless-stopped -p 1025:1025 -p 8025:8025 axllent/mailpit
+
       - name: Run integration tests
-        run: task test:integration-ci -- -p=1
+        run: cd mailer && go test -tags=integration ./...

@@ -4,10 +4,6 @@ package gomail
 
 import (
 	"context"
-	"fmt"
-	"io"
-	"log/slog"
-	"net/http"
 	"os"
 	"strconv"
 	"testing"
@@ -25,32 +21,6 @@ const (
 	mailerSMTPPortEnvKey     = "MAILER_TEST_SMTP_PORT"
 	mailerTestAPIPortEnvKey  = "MAILER_TEST_API_PORT"
 )
-
-func getAll() ([]any, error) {
-	r, err := http.NewRequest(http.MethodGet, "http://localhost:1025/api/v1/messages", nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create req: %w", err)
-	}
-
-	res, err := http.DefaultClient.Do(r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send req: %w", err)
-	}
-
-	defer func() { _ = res.Body.Close() }()
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("mailhog returned negative status code: %d", res.StatusCode)
-	}
-
-	b, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read bytes: %w", err)
-	}
-
-	slog.Info("Message from SMTP", slog.String("bytes", string(b)))
-
-	return nil, nil
-}
 
 func TestClientSend(t *testing.T) {
 	type fields struct {
@@ -181,8 +151,7 @@ func TestClientSend(t *testing.T) {
 
 			require.NoError(t, err)
 			msg, err := mh.GetAll()
-			_, errr := getAll()
-			require.NoError(t, errr)
+			require.NoError(t, err)
 			require.NotZero(t, len(msg))
 
 			mail := msg[0]
