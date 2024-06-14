@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"strconv"
@@ -74,6 +75,7 @@ func (c *Client) GetAll() ([]Mail, error) {
 	}
 
 	var msg []Mail
+	slog.Info("Received response", slog.Any("bytes", b))
 	if err := json.Unmarshal(b, &msg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshall: %w", err)
 	}
