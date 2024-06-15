@@ -1,6 +1,6 @@
 //go:build integration
 
-package exchangerate
+package exchangeapi
 
 import (
 	"context"
@@ -12,14 +12,12 @@ import (
 )
 
 const (
-	exchangeTestAPITokenEnvKey   = "EXCHANGE_TEST_API_KEY"
 	exchangeTestAPIBaseURLEnvKEy = "EXCHANGE_TEST_API_BASE_URL"
 )
 
 func TestClientConvert(t *testing.T) {
 	type fields struct {
-		token string
-		url   string
+		url string
 	}
 	type args struct {
 		ctx context.Context
@@ -33,8 +31,7 @@ func TestClientConvert(t *testing.T) {
 		{
 			name: "Should get exchange rate correctly",
 			fields: fields{
-				token: mustGetEnv(t, exchangeTestAPITokenEnvKey),
-				url:   mustGetEnv(t, exchangeTestAPIBaseURLEnvKEy),
+				url: mustGetEnv(t, exchangeTestAPIBaseURLEnvKEy),
 			},
 			args: args{
 				ctx: context.Background(),
@@ -42,20 +39,8 @@ func TestClientConvert(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Should not get exchange rate correctly when token is missing",
-			fields: fields{
-				url: mustGetEnv(t, exchangeTestAPIBaseURLEnvKEy),
-			},
-			args: args{
-				ctx: context.Background(),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Should not get exchange rate correctly when URL is missing",
-			fields: fields{
-				token: mustGetEnv(t, exchangeTestAPITokenEnvKey),
-			},
+			name:   "Should not get exchange rate correctly when URL is missing",
+			fields: fields{},
 			args: args{
 				ctx: context.Background(),
 			},
@@ -64,8 +49,7 @@ func TestClientConvert(t *testing.T) {
 		{
 			name: "Should not get exchange rate correctly when context exceeded",
 			fields: fields{
-				token: mustGetEnv(t, exchangeTestAPITokenEnvKey),
-				url:   mustGetEnv(t, exchangeTestAPIBaseURLEnvKEy),
+				url: mustGetEnv(t, exchangeTestAPIBaseURLEnvKEy),
 			},
 			args: args{
 				ctx: newImmediateCtx(),
@@ -77,8 +61,7 @@ func TestClientConvert(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := Client{
-				token: tt.fields.token,
-				url:   tt.fields.url,
+				url: tt.fields.url,
 			}
 
 			got, err := c.Convert(tt.args.ctx)
@@ -87,6 +70,7 @@ func TestClientConvert(t *testing.T) {
 				return
 			}
 
+			require.NoError(t, err)
 			require.NotZero(t, got)
 		})
 	}

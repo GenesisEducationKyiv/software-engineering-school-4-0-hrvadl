@@ -1,11 +1,11 @@
-package exchangerate
+package exchangeapi
 
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 )
@@ -15,8 +15,8 @@ const (
 )
 
 const (
-	usd = "USD"
-	uah = "UAH"
+	usd = "usd"
+	uah = "uah"
 )
 
 // usdUahResponse represents exchange rate API's response
@@ -24,27 +24,23 @@ const (
 // Struct also contains some meta fields which can be useful in long run,
 // such as UpdatedAt and TargetCode.
 type usdUahResponse struct {
-	ConversionRate float32 `json:"conversion_rate"`
-	BaseCode       string  `json:"base_code"`
-	TargetCode     string  `json:"target_code"`
-	UpdatedAt      int     `json:"time_last_update_unix"`
+	Date  string             `json:"date"`
+	Rates map[string]float32 `json:"usd,omitempty"`
 }
 
 // NewClient initializes new Client with parameters provided.
 // NOTE: neither of arguments can't be empty, because in that case
 // client will inevitably fail in the future.
-func NewClient(token, url string) Client {
+func NewClient(url string) Client {
 	return Client{
-		token: token,
-		url:   url,
+		url: url,
 	}
 }
 
 // Client struct represents exchange rate API client.
 // Note: url should be a base url for  the service, not full url.
 type Client struct {
-	token string
-	url   string
+	url string
 }
 
 // Convert method converts 1 USD to UAH accordingly to the
@@ -52,11 +48,11 @@ type Client struct {
 // getRate() function.
 func (c Client) Convert(ctx context.Context) (float32, error) {
 	res := new(usdUahResponse)
-	if err := c.getRate(ctx, res, usd, uah); err != nil {
+	if err := c.getRate(ctx, res, usd); err != nil {
 		return 0, fmt.Errorf("%s: %w", operation, err)
 	}
 
-	return res.ConversionRate, nil
+	return res.Rates["uah"], nil
 }
 
 // getRate method is used to query how much **from** currency is worth
@@ -66,17 +62,13 @@ func (c Client) getRate(
 	ctx context.Context,
 	response any,
 	from string,
-	to string,
 ) error {
-	if c.token == "" {
-		return errors.New("token is missing")
-	}
-
-	url, err := url.Parse(fmt.Sprintf("%s/%s/pair/%s/%s", c.url, c.token, from, to))
+	url, err := url.Parse(fmt.Sprintf("%s/%s.json", c.url, from))
 	if err != nil {
 		return fmt.Errorf("failed to parse url: %w", err)
 	}
 
+	slog.Info("parsed url", slog.Any("url", url.String()))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
 	if err != nil {
 		return fmt.Errorf("failed to construct request: %w", err)
@@ -96,6 +88,7 @@ func (c Client) getRate(
 		return fmt.Errorf("failed to read body bytes: %w", err)
 	}
 
+	slog.Info("got body", slog.Any("body", string(bytes)))
 	if err := json.Unmarshal(bytes, &response); err != nil {
 		return fmt.Errorf("failed to parse response body: %w", err)
 	}

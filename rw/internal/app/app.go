@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/cfg"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates/exchangerate"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates/exchangeapi"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/transport/grpc/server/ratewatcher"
 )
 
@@ -56,7 +56,7 @@ func (a *App) Run() error {
 
 	ratewatcher.Register(
 		a.srv,
-		exchangerate.NewClient(a.cfg.ExchangeServiceToken, a.cfg.ExchangeServiceBaseURL),
+		exchangeapi.NewClient(a.cfg.ExchangeServiceBaseURL),
 		a.log.With(slog.String("source", "rateWatcherSrv")),
 	)
 	a.log.Info("Successfully initialized all deps")

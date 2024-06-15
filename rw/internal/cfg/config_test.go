@@ -9,7 +9,6 @@ import (
 
 const (
 	exchangeServiceBaseURLEnvKey = "EXCHANGE_API_BASE_URL"
-	exchangeServiceTokenEnvKey   = "EXCHANGE_API_KEY"
 	logLevelEnvKey               = "EXCHANGE_LOG_LEVEL"
 	portEnvKey                   = "EXCHANGE_PORT"
 )
@@ -77,13 +76,11 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
-				t.Setenv(exchangeServiceTokenEnvKey, "secret")
 			},
 			want: &Config{
 				LogLevel:               "debug",
 				Port:                   "80",
 				ExchangeServiceBaseURL: "http://exchange.com",
-				ExchangeServiceToken:   "secret",
 			},
 			wantErr: false,
 		},
@@ -94,7 +91,6 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
-				t.Setenv(exchangeServiceTokenEnvKey, "secret")
 			},
 			want:    nil,
 			wantErr: true,
@@ -106,7 +102,6 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
-				t.Setenv(exchangeServiceTokenEnvKey, "secret")
 			},
 			want:    nil,
 			wantErr: true,
@@ -118,19 +113,6 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "")
-				t.Setenv(exchangeServiceTokenEnvKey, "secret")
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Should not parse config when token is missing",
-			setup: func(t *testing.T) {
-				t.Helper()
-				t.Setenv(logLevelEnvKey, "debug")
-				t.Setenv(portEnvKey, "80")
-				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
-				t.Setenv(exchangeServiceTokenEnvKey, "")
 			},
 			want:    nil,
 			wantErr: true,

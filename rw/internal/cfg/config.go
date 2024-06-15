@@ -12,7 +12,6 @@ const operation = "config parsing"
 // which is used application-wide.
 type Config struct {
 	ExchangeServiceBaseURL string `env:"API_BASE_URL,required,notEmpty"`
-	ExchangeServiceToken   string `env:"API_KEY,required,notEmpty"`
 	LogLevel               string `env:"LOG_LEVEL,required,notEmpty"`
 	Port                   string `env:"PORT,required,notEmpty"`
 }
