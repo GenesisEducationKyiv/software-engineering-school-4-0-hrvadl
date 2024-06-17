@@ -7,8 +7,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
@@ -64,6 +66,7 @@ func (a *App) Run() error {
 		gomail.NewClient(a.cfg.MailerFrom, a.cfg.MailerToken, a.cfg.MailerHost, a.cfg.MailerPort),
 		a.log.With(slog.String("source", "mailerSrv")),
 	)
+	go a.healthcheck(healthcheck)
 
 	listener, err := net.Listen("tcp", net.JoinHostPort("", a.cfg.Port))
 	if err != nil {
@@ -71,6 +74,17 @@ func (a *App) Run() error {
 	}
 
 	return a.srv.Serve(listener)
+}
+
+func (a *App) healthcheck(healthcheck *health.Server) {
+	const healthcheckInterval = time.Second * 5
+	for {
+		healthcheck.SetServingStatus(
+			pb.MailerService_ServiceDesc.ServiceName,
+			healthgrpc.HealthCheckResponse_SERVING,
+		)
+		time.Sleep(healthcheckInterval)
+	}
 }
 
 // GracefulStop method gracefully stop the server. It listens to the OS sigals.

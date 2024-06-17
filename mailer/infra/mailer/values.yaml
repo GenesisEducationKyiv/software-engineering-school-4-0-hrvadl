@@ -46,7 +46,8 @@ livenessProbe:
     path: /
     port: http
 readinessProbe:
-  initialDelaySeconds: 10
+  periodSeconds: 10
+  initialDelaySeconds: 5
   grpc:
     port: 8082
 
