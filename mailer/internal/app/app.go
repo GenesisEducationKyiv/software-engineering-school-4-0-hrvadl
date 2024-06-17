@@ -10,6 +10,8 @@ import (
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/cfg"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/gomail"
@@ -53,6 +55,9 @@ func (a *App) Run() error {
 	a.srv = grpc.NewServer(grpc.ChainUnaryInterceptor(
 		logger.NewServerGRPCMiddleware(a.log),
 	))
+
+	healthcheck := health.NewServer()
+	healthgrpc.RegisterHealthServer(a.srv, healthcheck)
 
 	mailer.Register(
 		a.srv,
