@@ -1,0 +1,27 @@
+version: "3"
+
+vars:
+  NAMESPACE: "dev"
+
+tasks:
+  default:
+    desc: "Show available tasks"
+    cmds:
+      - task --list-all
+
+  deploy:
+    desc: "Deploy mailer service to k8s"
+    cmds:
+      - helm upgrade -n {{ .NAMESPACE }} {{ .CLI_ARGUMENTS }} --install mailer ./mailer | tee output/manifest.yaml
+
+  dry-run:
+    desc: "Run dry run and store output file"
+    deps: [make-output-dir]
+    cmds:
+      - helm upgrade -n {{ .NAMESPACE }} {{ .CLI_ARGUMENTS }} --dry-run --install mailer ./mailer | tee output/manifest.yaml
+
+  make-output-dir:
+    cmds:
+      - mkdir output
+    status:
+      - ls | grep output

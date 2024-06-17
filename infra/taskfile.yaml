@@ -1,0 +1,12 @@
+version: "3"
+
+tasks:
+  default:
+    desc: "Show available tasks"
+    cmds:
+      - task --list-all
+
+  deploy:
+    desc: "Deploy mailer service to k8s"
+    cmds:
+      - kubectl apply -f ./k8s

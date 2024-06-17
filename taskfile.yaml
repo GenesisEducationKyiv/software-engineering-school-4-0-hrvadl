@@ -1,6 +1,9 @@
 version: "3"
 
 includes:
+  infra:
+    taskfile: ./infra/taskfile.yaml
+    dir: ./infra
   gw:
     taskfile: ./gw/taskfile.yaml
     dir: ./gw

@@ -1,5 +1,10 @@
 version: "3"
 
+includes:
+  depl:
+    taskfile: ./infra/taskfile.yaml
+    dir: ./infra
+
 tasks:
   default:
     desc: "Show available tasks"
