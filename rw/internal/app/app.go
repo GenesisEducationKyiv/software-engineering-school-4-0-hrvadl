@@ -9,7 +9,10 @@ import (
 	"syscall"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/ratewatcher"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/cfg"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates/exchangeapi"
@@ -60,6 +63,13 @@ func (a *App) Run() error {
 		a.log.With(slog.String("source", "rateWatcherSrv")),
 	)
 	a.log.Info("Successfully initialized all deps")
+
+	healthcheck := health.NewServer()
+	healthgrpc.RegisterHealthServer(a.srv, healthcheck)
+	healthcheck.SetServingStatus(
+		pb.RateWatcherService_ServiceDesc.ServiceName,
+		healthgrpc.HealthCheckResponse_SERVING,
+	)
 
 	listener, err := net.Listen("tcp", net.JoinHostPort("", a.cfg.Port))
 	if err != nil {
