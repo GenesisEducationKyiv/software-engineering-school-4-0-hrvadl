@@ -1,5 +1,6 @@
-secret.yaml
+**/secret.yaml
 .env
 .env.test
 .task
 */bin
+**/output/
