@@ -57,15 +57,14 @@ func (a *App) Run() error {
 		logger.NewServerGRPCMiddleware(a.log),
 	))
 
-	healthcheck := health.NewServer()
-	healthgrpc.RegisterHealthServer(a.srv, healthcheck)
-
 	mailer.Register(
 		a.srv,
 		gomail.NewClient(a.cfg.MailerFrom, a.cfg.MailerToken, a.cfg.MailerHost, a.cfg.MailerPort),
 		a.log.With(slog.String("source", "mailerSrv")),
 	)
 
+	healthcheck := health.NewServer()
+	healthgrpc.RegisterHealthServer(a.srv, healthcheck)
 	healthcheck.SetServingStatus(
 		pb.MailerService_ServiceDesc.ServiceName,
 		healthgrpc.HealthCheckResponse_SERVING,
