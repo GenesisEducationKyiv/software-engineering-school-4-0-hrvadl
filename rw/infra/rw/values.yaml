@@ -1,0 +1,65 @@
+replicaCount: 1
+
+image:
+  repository: hrvadl/rw
+  pullPolicy: Always
+  tag: "main"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+env:
+
+  - name: EXCHANGE_API_BASE_URL
+    value: "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@2024.6.15/v1/currencies"
+  - name: EXCHANGE_LOG_LEVEL
+    value: "DEBUG"
+  - name: EXCHANGE_PORT
+    value: "8081"
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8081
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+livenessProbe:
+  periodSeconds: 10
+  initialDelaySeconds: 5
+  grpc:
+    port: 8081
+readinessProbe:
+  periodSeconds: 10
+  initialDelaySeconds: 5
+  grpc:
+    port: 8081
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+volumes: []
+volumeMounts: []
