@@ -9,4 +9,5 @@ FROM scratch AS final
 WORKDIR /app
 COPY --from=builder /app/cmd/server/server .
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /etc/resolv.conf /etc/resolv.conf
 CMD [ "./server" ]
