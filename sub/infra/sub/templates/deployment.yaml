@@ -23,7 +23,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
-        - name: "{{ .Chart.Name}}-init"
+        - name: "{{ .Chart.Name}}-wait-for-db"
           image: "{{ .Values.initImage.repository }}:{{ .Values.initImage.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.initImage.pullPolicy }}
           envFrom:
@@ -35,6 +35,24 @@ spec:
             - | 
               until mysql --host=${MYSQL_HOSTNAME} --user=${MYSQL_USER} \
               --password=${MYSQL_PASSWORD} --execute="SELECT 1;"; do echo "waiting for mysql"; sleep 2; done;
+
+        - name: "{{ .Chart.Name}}-migrate-db"
+          image: "golang:latest"
+          imagePullPolicy: {{ .Values.initImage.pullPolicy }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ include "sub.fullname" . }}
+          command:
+            - "/bin/sh"
+            - "-c"
+            - |
+              go install -tags "mysql" github.com/golang-migrate/migrate/v4/cmd/migrate@latest && \
+              migrate -path="/mnt/database" -database "mysql://$SUB_DSN" up
+
       containers:
         - name: {{ .Chart.Name }}
           securityContext:

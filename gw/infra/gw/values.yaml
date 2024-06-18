@@ -1,12 +1,11 @@
 replicaCount: 1
 
-initImage:
-  repository: mysql
-  pullPolicy: IfNotPresent
-  tag: "latest"
+configMapData:
+  SUB_ADDR: "sub.dev.svc.cluster.local:8083"
+  RATE_WATCH_ADDR: "rw.dev.svc.cluster.local:8081"
 
 image:
-  repository: hrvadl/sub
+  repository: hrvadl/gw
   pullPolicy: Always
   tag: "main"
 
@@ -17,12 +16,10 @@ fullnameOverride: ""
 podAnnotations: {}
 podLabels: {}
 
-secretData: {}
-
 env:
-  - name: SUB_PORT
-    value: "8083"
-  - name: SUB_LOG_LEVEL
+  - name: GATEWAY_ADDR
+    value: "0.0.0.0:8080"
+  - name: GATEWAY_LOG_LEVEL
     value: "DEBUG"
 
 podSecurityContext:
@@ -38,7 +35,7 @@ securityContext:
 
 service:
   type: ClusterIP
-  port: 8083
+  port: 8080
 
 resources:
   limits:
@@ -51,13 +48,15 @@ resources:
 livenessProbe:
   periodSeconds: 10
   initialDelaySeconds: 5
-  grpc:
-    port: 8083
+  httpGet:
+    path: /health
+    port: 8080
 readinessProbe:
   periodSeconds: 10
   initialDelaySeconds: 5
-  grpc:
-    port: 8083
+  httpGet:
+    path: /health
+    port: 8080
 
 autoscaling:
   enabled: false
@@ -65,19 +64,5 @@ autoscaling:
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
 
-volumes:
-  - name: migrations
-    hostPath:
-      path: /mnt/database
-      type: Directory
-
-volumeMounts:
-  - mountPath: /mnt/database
-    name: migrations
-
-mysql:
-  auth:
-    rootPassword: ""
-    database: ""
-  secondary:
-    replicationCount: 0
+volumes: []
+volumeMounts: []

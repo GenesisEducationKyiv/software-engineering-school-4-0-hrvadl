@@ -22,9 +22,10 @@ tasks:
         - MYSQL_DATABASE
     deps: [make-output-dir]
     vars:
+      MYSQL_USER: root
       MYSQL_PORT: 3306
       MYSQL_HOSTNAME: "sub-mysql.dev.svc.cluster.local"
-      SUB_DSN: "root:{{ .MYSQL_ROOT_PASSWORD }}@({{ .MYSQL_HOSTNAME }}:{{ .MYSQL_PORT }})/{{ .MYSQL_DATABASE }}?parseTime=true"
+      SUB_DSN: "{{ .MYSQL_USER }}:{{ .MYSQL_ROOT_PASSWORD }}@({{ .MYSQL_HOSTNAME }}:{{ .MYSQL_PORT }})/{{ .MYSQL_DATABASE }}?parseTime=true"
     cmds:
       - echo "{{ .MYSQL_ROOT_PASSWORD }}"
       - |
@@ -33,7 +34,7 @@ tasks:
         --set mysql.auth.database='{{ .MYSQL_DATABASE }}' \
         --set secretData.SUB_DSN='{{ .SUB_DSN }}' \
         --set secretData.MYSQL_HOSTNAME='{{ .MYSQL_HOSTNAME }}' \
-        --set secretData.MYSQL_USER='root' \
+        --set secretData.MYSQL_USER='{{ .MYSQL_USER }}' \
         --set secretData.MYSQL_PASSWORD='{{ .MYSQL_ROOT_PASSWORD }}' \
         sub ./sub | tee output/manifest.yaml
 
