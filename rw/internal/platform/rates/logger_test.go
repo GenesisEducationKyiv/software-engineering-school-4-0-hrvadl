@@ -130,11 +130,11 @@ func TestWithLoggerDecoratorConvert(t *testing.T) {
 
 			require.Contains(t, tt.buf.String(), "Sending request to exchange API service")
 			if !tt.wantErr {
-				require.Contains(t, tt.buf.String(), "Received response from API")
+				require.Contains(t, tt.buf.String(), "Received response from exchange API")
 				return
 			}
 			require.Error(t, err)
-			require.Contains(t, tt.buf.String(), "Received error")
+			require.Contains(t, tt.buf.String(), "Received error from exchange API")
 		})
 	}
 }

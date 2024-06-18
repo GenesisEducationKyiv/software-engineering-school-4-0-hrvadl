@@ -26,10 +26,10 @@ func (c WithLoggerDecorator) Convert(ctx context.Context) (float32, error) {
 	c.log.Info("Sending request to exchange API service")
 	res, err := c.base.Convert(ctx)
 	if err != nil {
-		c.log.Error("Received error", slog.Any("err", err))
+		c.log.Error("Received error from exchange API", slog.Any("err", err))
 		return res, err
 	}
 
-	c.log.Error("Received response from API", slog.Any("res", res))
+	c.log.Error("Received response from exchange API", slog.Any("res", res))
 	return res, err
 }
