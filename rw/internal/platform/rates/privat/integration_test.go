@@ -1,28 +1,19 @@
 //go:build integration
 
-package exchangeapi
+package privat
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates/privat"
 )
 
-const (
-	exchangeTestAPIBaseURLEnvKey         = "EXCHANGE_TEST_API_BASE_URL"
-	exchangeTestAPIFallbackBaseURLEnvKey = "EXCHANGE_TEST_API_FALLBACK_BASE_URL"
-)
-
-func TestClientConvertInt(t *testing.T) {
+func TestClientConvert(t *testing.T) {
 	t.Parallel()
 	type fields struct {
-		url  string
-		next Converter
+		url string
 	}
 	type args struct {
 		ctx context.Context
@@ -31,17 +22,38 @@ func TestClientConvertInt(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
+		want    float32
 		wantErr bool
 	}{
 		{
-			name: "Should fallback to second exchanger",
+			name: "Should convert correctly",
 			fields: fields{
-				next: privat.NewClient(mustGetEnv(t, exchangeTestAPIFallbackBaseURLEnvKey)),
+				url: "https://api.privatbank.ua",
 			},
 			args: args{
 				ctx: context.Background(),
 			},
 			wantErr: false,
+		},
+		{
+			name: "Should return error when request takes too long",
+			fields: fields{
+				url: "https://api.privatbank.ua",
+			},
+			args: args{
+				ctx: newImmediateCtx(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should return error when url is incorrect",
+			fields: fields{
+				url: "https://api",
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+			wantErr: true,
 		},
 	}
 
@@ -49,8 +61,7 @@ func TestClientConvertInt(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			c := Client{
-				url:  tt.fields.url,
-				next: tt.fields.next,
+				url: tt.fields.url,
 			}
 
 			got, err := c.Convert(tt.args.ctx)
@@ -59,17 +70,9 @@ func TestClientConvertInt(t *testing.T) {
 				return
 			}
 
-			require.NoError(t, err)
 			require.NotZero(t, got)
 		})
 	}
-}
-
-func mustGetEnv(t *testing.T, key string) string {
-	t.Helper()
-	env := os.Getenv(key)
-	require.NotEmpty(t, env)
-	return env
 }
 
 func newImmediateCtx() context.Context {

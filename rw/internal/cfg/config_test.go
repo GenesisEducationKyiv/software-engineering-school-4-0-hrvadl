@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	exchangeServiceBaseURLEnvKey = "EXCHANGE_API_BASE_URL"
-	logLevelEnvKey               = "EXCHANGE_LOG_LEVEL"
-	portEnvKey                   = "EXCHANGE_PORT"
+	exchangeServiceBaseURLEnvKey         = "EXCHANGE_API_BASE_URL"
+	exchangeFallbackServiceBaseURLEnvKey = "EXCHANGE_API_FALLBACK_BASE_URL"
+	logLevelEnvKey                       = "EXCHANGE_LOG_LEVEL"
+	portEnvKey                           = "EXCHANGE_PORT"
 )
 
 func TestMust(t *testing.T) {
@@ -78,11 +79,13 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
+				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
 			},
 			want: &Config{
-				LogLevel:               "debug",
-				Port:                   "80",
-				ExchangeServiceBaseURL: "http://exchange.com",
+				LogLevel:                       "debug",
+				Port:                           "80",
+				ExchangeServiceBaseURL:         "http://exchange.com",
+				ExchangeFallbackServiceBaseURL: "http://exchange1.com",
 			},
 			wantErr: false,
 		},
@@ -93,6 +96,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
+				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
 			},
 			want:    nil,
 			wantErr: true,
@@ -104,6 +108,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
+				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
 			},
 			want:    nil,
 			wantErr: true,
@@ -115,6 +120,18 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "")
+				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Should not parse config when fallback base URL is missing",
+			setup: func(t *testing.T) {
+				t.Helper()
+				t.Setenv(logLevelEnvKey, "debug")
+				t.Setenv(portEnvKey, "80")
+				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
 			},
 			want:    nil,
 			wantErr: true,

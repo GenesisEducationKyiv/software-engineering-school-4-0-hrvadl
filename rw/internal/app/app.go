@@ -15,7 +15,9 @@ import (
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/cfg"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates/exchangeapi"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates/privat"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/transport/grpc/server/ratewatcher"
 )
 
@@ -57,9 +59,24 @@ func (a *App) Run() error {
 		logger.NewServerGRPCMiddleware(a.log),
 	))
 
+	privatRw := rates.NewWithLogger(
+		privat.NewClient(a.cfg.ExchangeFallbackServiceBaseURL),
+		a.log.With(slog.String("source", "privatAPI")),
+	)
+
+	baseRw := exchangeapi.NewWithResponsibilityChainClient(
+		a.cfg.ExchangeServiceBaseURL,
+		privatRw,
+	)
+
+	wrapped := rates.NewWithLogger(
+		baseRw,
+		a.log.With(slog.String("source", "baseAPI")),
+	)
+
 	ratewatcher.Register(
 		a.srv,
-		exchangeapi.NewClient(a.cfg.ExchangeServiceBaseURL),
+		wrapped,
 		a.log.With(slog.String("source", "rateWatcherSrv")),
 	)
 	a.log.Info("Successfully initialized all deps")

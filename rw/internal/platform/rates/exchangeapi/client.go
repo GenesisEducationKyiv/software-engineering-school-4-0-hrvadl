@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/url"
 )
@@ -37,10 +36,23 @@ func NewClient(url string) Client {
 	}
 }
 
+func NewWithResponsibilityChainClient(url string, next Converter) Client {
+	return Client{
+		url:  url,
+		next: next,
+	}
+}
+
+//go:generate mockgen -destination=./mocks/mock_converter.go -package=mocks . Converter
+type Converter interface {
+	Convert(ctx context.Context) (float32, error)
+}
+
 // Client struct represents exchange rate API client.
 // Note: url should be a base url for  the service, not full url.
 type Client struct {
-	url string
+	url  string
+	next Converter
 }
 
 // Convert method converts 1 USD to UAH accordingly to the
@@ -48,11 +60,16 @@ type Client struct {
 // getRate() function.
 func (c Client) Convert(ctx context.Context) (float32, error) {
 	res := new(usdUahResponse)
-	if err := c.getRate(ctx, res, usd); err != nil {
+	err := c.getRate(ctx, res, usd)
+	if err == nil {
+		return res.Rates["uah"], nil
+	}
+
+	if c.next == nil {
 		return 0, fmt.Errorf("%s: %w", operation, err)
 	}
 
-	return res.Rates["uah"], nil
+	return c.next.Convert(ctx)
 }
 
 // getRate method is used to query how much **from** currency is worth
@@ -68,7 +85,6 @@ func (c Client) getRate(
 		return fmt.Errorf("failed to parse url: %w", err)
 	}
 
-	slog.Info("parsed url", slog.Any("url", url.String()))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
 	if err != nil {
 		return fmt.Errorf("failed to construct request: %w", err)
@@ -88,7 +104,6 @@ func (c Client) getRate(
 		return fmt.Errorf("failed to read body bytes: %w", err)
 	}
 
-	slog.Info("got body", slog.Any("body", string(bytes)))
 	if err := json.Unmarshal(bytes, &response); err != nil {
 		return fmt.Errorf("failed to parse response body: %w", err)
 	}
