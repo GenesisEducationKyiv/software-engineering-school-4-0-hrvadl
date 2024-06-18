@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sub.fullname" . }}
+  labels:
+    {{- include "sub.labels" . | nindent 4 }}
+type: Opaque
+data:
+  MAILER_ADDR: "mailer.dev.svc.cluster.local:8082"
+  RATE_WATCH_ADDR: "rw.dev.svc.cluster.local:8081"

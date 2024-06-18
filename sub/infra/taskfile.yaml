@@ -1,0 +1,62 @@
+version: "3"
+
+vars:
+  NAMESPACE: "dev"
+
+tasks:
+  default:
+    desc: "Show available tasks"
+    cmds:
+      - task --list-all
+
+  deploy:
+    desc: "Deploy sub service to k8s"
+    cmds:
+      - helm upgrade -n {{ .NAMESPACE }} {{ .CLI_ARGS }} --install sub ./sub | tee output/manifest.yaml
+
+  deploy:
+    desc: "Run dry run and store output file"
+    requires:
+      vars:
+        - MYSQL_ROOT_PASSWORD
+        - MYSQL_DATABASE
+    deps: [make-output-dir]
+    vars:
+      MYSQL_PORT: 3306
+      MYSQL_HOSTNAME: "sub-mysql.dev.svc.cluster.local"
+      SUB_DSN: "root:{{ .MYSQL_ROOT_PASSWORD }}@({{ .MYSQL_HOSTNAME }}:{{ .MYSQL_PORT }})/{{ .MYSQL_DATABASE }}?parseTime=true"
+    cmds:
+      - echo "{{ .MYSQL_ROOT_PASSWORD }}"
+      - |
+        helm upgrade -n {{ .NAMESPACE }} {{ .CLI_ARGS }} --install  \
+        --set mysql.auth.rootPassword='{{ .MYSQL_ROOT_PASSWORD }}' \
+        --set mysql.auth.database='{{ .MYSQL_DATABASE }}' \
+        --set secretData.SUB_DSN='{{ .SUB_DSN }}' \
+        --set secretData.MYSQL_HOSTNAME='{{ .MYSQL_HOSTNAME }}' \
+        --set secretData.MYSQL_USER='root' \
+        --set secretData.MYSQL_PASSWORD='{{ .MYSQL_ROOT_PASSWORD }}' \
+        sub ./sub | tee output/manifest.yaml
+
+  dry-run:
+    desc: "Run dry run and store output file"
+    requires:
+      vars:
+        - MYSQL_ROOT_PASSWORD
+        - MYSQL_DATABASE
+    deps: [make-output-dir]
+    vars:
+      MYSQL_PORT: 3306
+      MYSQL_HOSTNAME: "sub-mysql.dev.svc.cluster.local:{{ .MYSQL_PORT }}"
+      SUB_DSN: "root:{{ .MYSQL_ROOT_PASSWORD }}@({{ .MYSQL_HOSTNAME }}:{{ .MYSQL_PORT }})/{{ .MYSQL_DATABASE }}?parseTime=true"
+    cmds:
+      - |
+        helm upgrade -n {{ .NAMESPACE }} {{ .CLI_ARGS }} --dry-run --install sub ./sub \
+        --set 'auth.rootPassword={{ .MYSQL_ROOT_PASSWORD }}' \
+        --set 'auth.database={{ .MYSQL_DATABASE }}' \
+        --set 'secretData.SUB_DSN={{ .SUB_DSN }}' | tee output/manifest.yaml
+
+  make-output-dir:
+    cmds:
+      - mkdir output
+    status:
+      - ls | grep output

@@ -1,0 +1,76 @@
+replicaCount: 1
+
+initImage:
+  repository: mysql
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+image:
+  repository: hrvadl/sub
+  pullPolicy: Always
+  tag: "main"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+secretData: {}
+
+env:
+  - name: SUB_PORT
+    value: "8083"
+  - name: SUB_LOG_LEVEL
+    value: "DEBUG"
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8083
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+livenessProbe:
+  periodSeconds: 10
+  initialDelaySeconds: 5
+  grpc:
+    port: 8083
+readinessProbe:
+  periodSeconds: 10
+  initialDelaySeconds: 5
+  grpc:
+    port: 8083
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+volumes: []
+volumeMounts: []
+
+mysql:
+  auth: 
+    rootPassword: ""
+    database: ""
+  secondary:
+    replicationCount: 0

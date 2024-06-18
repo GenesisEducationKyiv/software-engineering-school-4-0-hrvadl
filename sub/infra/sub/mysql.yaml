@@ -1,0 +1,12 @@
+mysql:
+  auth:
+    rootPassword: "password"
+  primary:
+    startupProbe:
+      enabled: false
+    readinessProbe:
+      enabled: false
+    livenessProbe:
+      enabled: false
+  secondary:
+    replicaCount: 0
