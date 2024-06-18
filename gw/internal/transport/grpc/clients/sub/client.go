@@ -18,7 +18,7 @@ import (
 
 const (
 	retryCount   = 3
-	retryTimeout = time.Second * 2
+	retryTimeout = time.Second * 6
 )
 
 // NewClient constructs a GRPC subscriber client with provided arguments. Under the hood
