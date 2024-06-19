@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -86,8 +87,11 @@ func TestClientConvert(t *testing.T) {
 		{
 			name: "Should fallback to another client when failed",
 			fields: fields{
-				url:  "https://url2.com",
+				url:  "https://exchange.com",
 				next: mocks.NewMockConverter(gomock.NewController(t)),
+			},
+			args: args{
+				ctx: newImmediateCtx(),
 			},
 			setup: func(t *testing.T, converter Converter) {
 				t.Helper()
@@ -120,4 +124,10 @@ func TestClientConvert(t *testing.T) {
 			}
 		})
 	}
+}
+
+func newImmediateCtx() context.Context {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
+	defer cancel()
+	return ctx
 }
