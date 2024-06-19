@@ -21,14 +21,14 @@ func TestNewClient(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want Client
+		want *Client
 	}{
 		{
 			name: "Should initiate new client correctly",
 			args: args{
 				url: "https://url.com",
 			},
-			want: Client{
+			want: &Client{
 				url: "https://url.com",
 			},
 		},
@@ -37,7 +37,7 @@ func TestNewClient(t *testing.T) {
 			args: args{
 				url: "https://url2.com",
 			},
-			want: Client{
+			want: &Client{
 				url: "https://url2.com",
 			},
 		},
