@@ -52,48 +52,6 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
-func TestNewWithResponsibilityChainClient(t *testing.T) {
-	t.Parallel()
-	type args struct {
-		url  string
-		next Converter
-	}
-	tests := []struct {
-		name string
-		args args
-		want Client
-	}{
-		{
-			name: "Should initiate new client correctly",
-			args: args{
-				url:  "https://url.com",
-				next: mocks.NewMockConverter(gomock.NewController(t)),
-			},
-			want: Client{
-				url:  "https://url.com",
-				next: mocks.NewMockConverter(gomock.NewController(t)),
-			},
-		},
-		{
-			name: "Should initiate new client correctly",
-			args: args{
-				url: "https://url2.com",
-			},
-			want: Client{
-				url: "https://url2.com",
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got := NewWithResponsibilityChainClient(tt.args.url, tt.args.next)
-			require.Equal(t, tt.want, got)
-		})
-	}
-}
-
 func TestClientConvert(t *testing.T) {
 	t.Parallel()
 	type fields struct {

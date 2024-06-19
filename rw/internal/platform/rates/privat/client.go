@@ -21,8 +21,14 @@ func NewClient(url string) *Client {
 	}
 }
 
+//go:generate mockgen -destination=./mocks/mock_converter.go -package=mocks . Converter
+type Converter interface {
+	Convert(ctx context.Context) (float32, error)
+}
+
 type Client struct {
-	url string
+	url  string
+	next Converter
 }
 
 type rate struct {
@@ -32,7 +38,7 @@ type rate struct {
 	Sale    float32 `json:"sale,omitempty,string"`
 }
 
-func (c Client) Convert(ctx context.Context) (float32, error) {
+func (c *Client) Convert(ctx context.Context) (float32, error) {
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
@@ -68,6 +74,10 @@ func (c Client) Convert(ctx context.Context) (float32, error) {
 	}
 
 	return rate.Buy, nil
+}
+
+func (c *Client) SetNext(next Converter) {
+	c.next = next
 }
 
 func findExchangeRateFor(base, target string, r []rate) (*rate, error) {

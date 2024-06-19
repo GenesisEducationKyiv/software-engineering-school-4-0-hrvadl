@@ -30,16 +30,9 @@ type usdUahResponse struct {
 // NewClient initializes new Client with parameters provided.
 // NOTE: neither of arguments can't be empty, because in that case
 // client will inevitably fail in the future.
-func NewClient(url string) Client {
-	return Client{
+func NewClient(url string) *Client {
+	return &Client{
 		url: url,
-	}
-}
-
-func NewWithResponsibilityChainClient(url string, next Converter) Client {
-	return Client{
-		url:  url,
-		next: next,
 	}
 }
 
@@ -58,7 +51,7 @@ type Client struct {
 // Convert method converts 1 USD to UAH accordingly to the
 // latest exchange rate. It's a handly wrapper around internal
 // getRate() function.
-func (c Client) Convert(ctx context.Context) (float32, error) {
+func (c *Client) Convert(ctx context.Context) (float32, error) {
 	res := new(usdUahResponse)
 	err := c.getRate(ctx, res, usd)
 	if err == nil {
@@ -72,10 +65,14 @@ func (c Client) Convert(ctx context.Context) (float32, error) {
 	return c.next.Convert(ctx)
 }
 
+func (c *Client) SetNext(next Converter) {
+	c.next = next
+}
+
 // getRate method is used to query how much **from** currency is worth
 // in **to**  currency. response should be a pointer to the API response.
 // It's needed because API returns different responses for differect currency pairs.
-func (c Client) getRate(
+func (c *Client) getRate(
 	ctx context.Context,
 	response any,
 	from string,

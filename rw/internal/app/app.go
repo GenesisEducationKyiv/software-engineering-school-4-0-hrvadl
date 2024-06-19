@@ -64,10 +64,8 @@ func (a *App) Run() error {
 		a.log.With(slog.String("source", "privatAPI")),
 	)
 
-	baseRw := exchangeapi.NewWithResponsibilityChainClient(
-		a.cfg.ExchangeServiceBaseURL,
-		privatRw,
-	)
+	baseRw := exchangeapi.NewClient(a.cfg.ExchangeServiceBaseURL)
+	baseRw.SetNext(privatRw)
 
 	wrapped := rates.NewWithLogger(
 		baseRw,
