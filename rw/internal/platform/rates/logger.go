@@ -22,7 +22,7 @@ type WithLoggerDecorator struct {
 	log  *slog.Logger
 }
 
-func (c WithLoggerDecorator) Convert(ctx context.Context) (float32, error) {
+func (c *WithLoggerDecorator) Convert(ctx context.Context) (float32, error) {
 	c.log.Info("Sending request to exchange API service")
 	res, err := c.base.Convert(ctx)
 	if err != nil {

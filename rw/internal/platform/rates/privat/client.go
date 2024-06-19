@@ -39,6 +39,24 @@ type rate struct {
 }
 
 func (c *Client) Convert(ctx context.Context) (float32, error) {
+	res, err := c.getRate(ctx)
+	if err == nil {
+		return res, nil
+	}
+
+	if c.next == nil {
+		return 0, err
+	}
+
+	chainedRes, chainedErr := c.next.Convert(ctx)
+	if chainedErr != nil {
+		return 0, fmt.Errorf("%w: %w", err, chainedErr)
+	}
+
+	return chainedRes, nil
+}
+
+func (c *Client) getRate(ctx context.Context) (float32, error) {
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,

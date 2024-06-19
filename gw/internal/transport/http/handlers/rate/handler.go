@@ -9,7 +9,7 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/gw/internal/transport/http/handlers"
 )
 
-const getRateTimeout = 3 * time.Second
+const getRateTimeout = 6 * time.Second
 
 func NewHandler(rg Getter, log *slog.Logger) *Handler {
 	return &Handler{

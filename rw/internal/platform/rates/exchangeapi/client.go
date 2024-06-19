@@ -62,7 +62,12 @@ func (c *Client) Convert(ctx context.Context) (float32, error) {
 		return 0, fmt.Errorf("%s: %w", operation, err)
 	}
 
-	return c.next.Convert(ctx)
+	chainedRes, chainedErr := c.next.Convert(ctx)
+	if chainedErr != nil {
+		return 0, fmt.Errorf("%w: %w", err, chainedErr)
+	}
+
+	return chainedRes, nil
 }
 
 func (c *Client) SetNext(next Converter) {

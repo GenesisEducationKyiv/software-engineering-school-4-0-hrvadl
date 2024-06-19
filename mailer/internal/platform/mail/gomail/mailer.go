@@ -52,7 +52,11 @@ func (c *Client) handleDone(ctx context.Context, err error, in *pb.Mail) error {
 		return err
 	}
 
-	return c.next.Send(ctx, in)
+	if chainedErr := c.next.Send(ctx, in); chainedErr != nil {
+		return fmt.Errorf("%w: %w", err, chainedErr)
+	}
+
+	return nil
 }
 
 func (c *Client) send(in *pb.Mail) <-chan error {

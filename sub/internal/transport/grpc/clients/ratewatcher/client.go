@@ -7,19 +7,18 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/ratewatcher"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/types/known/emptypb"
-
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
 )
 
 const (
 	retryCount   = 3
-	retryTimeout = time.Second * 2
+	retryTimeout = time.Second * 6
 )
 
 // NewClient constructs a GRPC rate watcher client with provided arguments. Under the hood

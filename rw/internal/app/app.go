@@ -59,17 +59,16 @@ func (a *App) Run() error {
 		logger.NewServerGRPCMiddleware(a.log),
 	))
 
-	privatRw := rates.NewWithLogger(
-		privat.NewClient(a.cfg.ExchangeFallbackServiceBaseURL),
-		a.log.With(slog.String("source", "privatAPI")),
+	privatRw := privat.NewClient(a.cfg.ExchangeFallbackServiceBaseURL)
+	exchangeRw := rates.NewWithLogger(
+		exchangeapi.NewClient(a.cfg.ExchangeServiceBaseURL),
+		a.log.With(slog.String("source", "exchangeAPI")),
 	)
 
-	baseRw := exchangeapi.NewClient(a.cfg.ExchangeServiceBaseURL)
-	baseRw.SetNext(privatRw)
-
+	privatRw.SetNext(exchangeRw)
 	wrapped := rates.NewWithLogger(
-		baseRw,
-		a.log.With(slog.String("source", "baseAPI")),
+		privatRw,
+		a.log.With(slog.String("source", "privatAPI")),
 	)
 
 	ratewatcher.Register(

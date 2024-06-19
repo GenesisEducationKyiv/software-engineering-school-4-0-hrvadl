@@ -46,12 +46,28 @@ func (c *Client) Send(ctx context.Context, m *pb.Mail) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	case err := <-done:
-		return err
+		return c.handleDone(ctx, err, m)
 	}
 }
 
 func (c *Client) SetNext(next ChainedSender) {
 	c.next = next
+}
+
+func (c *Client) handleDone(ctx context.Context, err error, in *pb.Mail) error {
+	if err == nil {
+		return nil
+	}
+
+	if c.next == nil {
+		return err
+	}
+
+	if chainedErr := c.next.Send(ctx, in); chainedErr != nil {
+		return fmt.Errorf("%w: %w", err, chainedErr)
+	}
+
+	return nil
 }
 
 func (c *Client) send(m *pb.Mail) <-chan error {
