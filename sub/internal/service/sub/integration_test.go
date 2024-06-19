@@ -34,7 +34,7 @@ func TestMain(t *testing.M) {
 	os.Exit(code)
 }
 
-func TestServiceSubscribeInt(t *testing.T) {
+func TestServiceSubscribe(t *testing.T) {
 	type args struct {
 		ctx  context.Context
 		mail string

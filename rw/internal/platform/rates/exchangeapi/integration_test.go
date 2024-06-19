@@ -18,7 +18,7 @@ const (
 	exchangeTestAPIFallbackBaseURLEnvKey = "EXCHANGE_TEST_API_FALLBACK_BASE_URL"
 )
 
-func TestClientConvertInt(t *testing.T) {
+func TestClientConvert(t *testing.T) {
 	t.Parallel()
 	type fields struct {
 		url  string
@@ -42,6 +42,24 @@ func TestClientConvertInt(t *testing.T) {
 				ctx: context.Background(),
 			},
 			wantErr: false,
+		},
+		{
+			name:   "Should not get exchange rate correctly when URL is missing",
+			fields: fields{},
+			args: args{
+				ctx: context.Background(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should not get exchange rate correctly when context exceeded",
+			fields: fields{
+				url: mustGetEnv(t, exchangeTestAPIBaseURLEnvKey),
+			},
+			args: args{
+				ctx: newImmediateCtx(),
+			},
+			wantErr: true,
 		},
 	}
 
