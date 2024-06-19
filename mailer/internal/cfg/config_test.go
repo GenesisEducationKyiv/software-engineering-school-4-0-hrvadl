@@ -10,12 +10,14 @@ import (
 )
 
 const (
-	logLevelEnvKey    = "MAILER_LOG_LEVEL"
-	portEnvKey        = "MAILER_PORT"
-	mailerTokenEnvKey = "MAILER_SMTP_PASSWORD" // #nosec G101
-	mailerFromEnvKey  = "MAILER_SMTP_FROM"
-	mailerHostEnvKey  = "MAILER_SMTP_HOST"
-	mailerPortEnvKey  = "MAILER_SMTP_PORT"
+	logLevelEnvKey            = "MAILER_LOG_LEVEL"
+	portEnvKey                = "MAILER_PORT"
+	mailerTokenEnvKey         = "MAILER_SMTP_PASSWORD"  // #nosec G101
+	mailerFallbackTokenEnvKey = "MAILER_FALLBACK_TOKEN" // #nosec G101
+	mailerFromEnvKey          = "MAILER_SMTP_FROM"
+	mailerFallbackFromEnvKey  = "MAILER_FALLBACK_FROM"
+	mailerHostEnvKey          = "MAILER_SMTP_HOST"
+	mailerPortEnvKey          = "MAILER_SMTP_PORT"
 )
 
 func TestMust(t *testing.T) {
@@ -81,17 +83,21 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(mailerTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackFromEnvKey, "secret@test.com")
 				t.Setenv(mailerFromEnvKey, "secret@test.com")
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mailerPortEnvKey, "528")
 			},
 			want: &Config{
-				LogLevel:    "debug",
-				Port:        "80",
-				MailerToken: "secret",
-				MailerFrom:  "secret@test.com",
-				MailerHost:  "smtp.google.com",
-				MailerPort:  528,
+				LogLevel:            "debug",
+				Port:                "80",
+				MailerPassword:      "secret",
+				MailerFallbackToken: "secret",
+				MailerFrom:          "secret@test.com",
+				MailerFromFallback:  "secret@test.com",
+				MailerHost:          "smtp.google.com",
+				MailerPort:          528,
 			},
 			wantErr: false,
 		},
@@ -101,7 +107,9 @@ func TestNewFromEnv(t *testing.T) {
 				t.Helper()
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(mailerTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackTokenEnvKey, "secret")
 				t.Setenv(mailerFromEnvKey, "secret@test.com")
+				t.Setenv(mailerFallbackFromEnvKey, "secret@test.com")
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mailerPortEnvKey, "528")
 			},
@@ -114,8 +122,25 @@ func TestNewFromEnv(t *testing.T) {
 				t.Helper()
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(mailerTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackTokenEnvKey, "secret")
 				t.Setenv(mailerFromEnvKey, "secret@test.com")
+				t.Setenv(mailerFallbackFromEnvKey, "secret@test.com")
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Should not parse config correctly when password is missing",
+			setup: func(t *testing.T) {
+				t.Helper()
+				t.Setenv(logLevelEnvKey, "debug")
+				t.Setenv(portEnvKey, "80")
+				t.Setenv(mailerFallbackTokenEnvKey, "secret")
+				t.Setenv(mailerFromEnvKey, "secret@test.com")
+				t.Setenv(mailerFallbackFromEnvKey, "secret@test.com")
+				t.Setenv(mailerHostEnvKey, "smtp.google.com")
+				t.Setenv(mailerPortEnvKey, "528")
 			},
 			want:    nil,
 			wantErr: true,
@@ -126,7 +151,9 @@ func TestNewFromEnv(t *testing.T) {
 				t.Helper()
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "80")
+				t.Setenv(mailerTokenEnvKey, "secret")
 				t.Setenv(mailerFromEnvKey, "secret@test.com")
+				t.Setenv(mailerFallbackFromEnvKey, "secret@test.com")
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mailerPortEnvKey, "528")
 			},
@@ -140,6 +167,23 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(mailerTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackFromEnvKey, "secret@test.com")
+				t.Setenv(mailerHostEnvKey, "smtp.google.com")
+				t.Setenv(mailerPortEnvKey, "528")
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Should not parse config when fallback from mail is missing",
+			setup: func(t *testing.T) {
+				t.Helper()
+				t.Setenv(logLevelEnvKey, "debug")
+				t.Setenv(portEnvKey, "80")
+				t.Setenv(mailerTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackTokenEnvKey, "secret")
+				t.Setenv(mailerFromEnvKey, "secret@test.com")
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mailerPortEnvKey, "528")
 			},
@@ -153,6 +197,8 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(mailerTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackFromEnvKey, "secret@test.com")
 				t.Setenv(mailerFromEnvKey, "secret@test.com")
 				t.Setenv(mailerHostEnvKey, "host")
 			},
@@ -166,6 +212,8 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(mailerTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackFromEnvKey, "secret@test.com")
 				t.Setenv(mailerFromEnvKey, "secret@test.com")
 				t.Setenv(mailerPortEnvKey, "528")
 			},

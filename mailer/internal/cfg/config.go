@@ -11,12 +11,14 @@ const operation = "config parsing"
 // Config struct represents application config,
 // which is used application-wide.
 type Config struct {
-	MailerToken string `env:"SMTP_PASSWORD,required,notEmpty"`
-	MailerFrom  string `env:"SMTP_FROM,required,notEmpty"`
-	MailerHost  string `env:"SMTP_HOST,required,notEmpty"`
-	MailerPort  int    `env:"SMTP_PORT,required,notEmpty"`
-	LogLevel    string `env:"LOG_LEVEL,required,notEmpty"`
-	Port        string `env:"PORT,required,notEmpty"`
+	MailerPassword      string `env:"SMTP_PASSWORD,required,notEmpty"`
+	MailerFallbackToken string `env:"FALLBACK_TOKEN,required,notEmpty"`
+	MailerFrom          string `env:"SMTP_FROM,required,notEmpty"`
+	MailerFromFallback  string `env:"FALLBACK_FROM,required,notEmpty"`
+	MailerHost          string `env:"SMTP_HOST,required,notEmpty"`
+	MailerPort          int    `env:"SMTP_PORT,required,notEmpty"`
+	LogLevel            string `env:"LOG_LEVEL,required,notEmpty"`
+	Port                string `env:"PORT,required,notEmpty"`
 }
 
 // Must is a handly wrapper around return results from

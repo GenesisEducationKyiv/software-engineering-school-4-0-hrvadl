@@ -18,9 +18,14 @@ func NewClient(from, password, host string, port int) *Client {
 	}
 }
 
+type ChainedSender interface {
+	Send(ctx context.Context, in *pb.Mail) error
+}
+
 type Client struct {
 	dialer *gomail.Dialer
 	from   string
+	next   ChainedSender
 }
 
 func (c *Client) Send(ctx context.Context, in *pb.Mail) error {
@@ -30,8 +35,24 @@ func (c *Client) Send(ctx context.Context, in *pb.Mail) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	case err := <-done:
+		return c.handleDone(ctx, err, in)
+	}
+}
+
+func (c *Client) SetNext(next ChainedSender) {
+	c.next = next
+}
+
+func (c *Client) handleDone(ctx context.Context, err error, in *pb.Mail) error {
+	if err == nil {
+		return nil
+	}
+
+	if c.next == nil {
 		return err
 	}
+
+	return c.next.Send(ctx, in)
 }
 
 func (c *Client) send(in *pb.Mail) <-chan error {

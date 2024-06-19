@@ -16,6 +16,7 @@ import (
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/cfg"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/gomail"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/resend"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/grpc/server/mailer"
 )
 
@@ -57,9 +58,18 @@ func (a *App) Run() error {
 		logger.NewServerGRPCMiddleware(a.log),
 	))
 
+	resend := resend.NewClient(a.cfg.MailerFromFallback, a.cfg.MailerFallbackToken)
+	gomail := gomail.NewClient(
+		a.cfg.MailerFrom,
+		a.cfg.MailerPassword,
+		a.cfg.MailerHost,
+		a.cfg.MailerPort,
+	)
+	gomail.SetNext(resend)
+
 	mailer.Register(
 		a.srv,
-		gomail.NewClient(a.cfg.MailerFrom, a.cfg.MailerToken, a.cfg.MailerHost, a.cfg.MailerPort),
+		gomail,
 		a.log.With(slog.String("source", "mailerSrv")),
 	)
 
