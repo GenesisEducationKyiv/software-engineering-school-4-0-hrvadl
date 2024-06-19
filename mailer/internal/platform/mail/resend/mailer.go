@@ -19,6 +19,7 @@ func NewClient(from, token string) *Client {
 	}
 }
 
+//go:generate mockgen -destination=./mocks/mock_sender.go -package=mocks . ChainedSender
 type ChainedSender interface {
 	Send(ctx context.Context, in *pb.Mail) error
 }
