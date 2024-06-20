@@ -5,7 +5,6 @@ package gomail
 import (
 	"context"
 	"errors"
-	"reflect"
 	"testing"
 
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
@@ -60,12 +59,8 @@ func TestNewClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := NewClient(tt.args.from, tt.args.password, tt.args.host, tt.args.port); !reflect.DeepEqual(
-				got,
-				tt.want,
-			) {
-				t.Errorf("NewClient() = %v, want %v", got, tt.want)
-			}
+			got := NewClient(tt.args.from, tt.args.password, tt.args.host, tt.args.port)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

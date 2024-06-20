@@ -4,7 +4,6 @@ package cron
 
 import (
 	"log/slog"
-	"reflect"
 	"testing"
 	"time"
 
@@ -55,12 +54,8 @@ func TestNewDailyJob(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := NewDailyJob(tt.args.hour, tt.args.min, tt.args.log); !reflect.DeepEqual(
-				got.interval,
-				tt.want.interval,
-			) {
-				t.Errorf("NewDailyJob() = %v, want %v", got, tt.want)
-			}
+			got := NewDailyJob(tt.args.hour, tt.args.min, tt.args.log)
+			require.Equal(t, tt.want.interval, got.interval)
 		})
 	}
 }
