@@ -1,0 +1,19 @@
+version: 2
+
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/gw"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/rw"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/sub"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/mailer"
+    schedule:
+      interval: "weekly"
