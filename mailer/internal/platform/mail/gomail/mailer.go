@@ -31,7 +31,6 @@ type Client struct {
 
 func (c *Client) Send(ctx context.Context, in *pb.Mail) error {
 	done := c.send(in)
-
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -66,7 +65,7 @@ func (c *Client) send(in *pb.Mail) <-chan error {
 	go func() {
 		m := gomail.NewMessage()
 		m.SetHeader("From", c.from)
-		m.SetHeader("To", in.GetTo()...)
+		m.SetHeader("Bcc", in.GetTo()...)
 		m.SetHeader("Subject", in.GetSubject())
 		m.SetBody("text/html", in.GetHtml())
 
