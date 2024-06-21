@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/mailhog"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/mailpit"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
 	"github.com/stretchr/testify/require"
 )
@@ -129,7 +129,7 @@ func TestClientSend(t *testing.T) {
 		},
 	}
 
-	mh := mailhog.NewClient(
+	mh := mailpit.NewClient(
 		mustGetEnv(t, mailerSMTPHostEnvKey),
 		mustAtoi(t, mustGetEnv(t, mailerTestAPIPortEnvKey)),
 		time.Second*3,
@@ -155,13 +155,15 @@ func TestClientSend(t *testing.T) {
 
 			mail := msg[0]
 			require.NoError(t, err)
-			require.Equal(t, tt.args.in.GetTo(), getToMails(mail.To))
+			require.Empty(t, mail.Cc)
+			require.Empty(t, mail.To)
+			require.Equal(t, tt.args.in.GetTo(), getToMails(mail.Bcc))
 			require.Contains(t, mail.Subject, tt.args.in.GetSubject())
 		})
 	}
 }
 
-func getToMails(to []mailhog.Receipient) []string {
+func getToMails(to []mailpit.Receipient) []string {
 	mails := make([]string, 0, len(to))
 	for _, t := range to {
 		mails = append(mails, t.Address)
