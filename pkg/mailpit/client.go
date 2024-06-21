@@ -1,4 +1,4 @@
-package mailhog
+package mailpit
 
 import (
 	"encoding/json"
@@ -19,6 +19,8 @@ type Message struct {
 	ID      string       `json:"ID,omitempty"`
 	From    Receipient   `json:"From,omitempty"`
 	To      []Receipient `json:"To,omitempty"`
+	Bcc     []Receipient `json:"Bcc,omitempty"`
+	Cc      []Receipient `json:"Cc,omitempty"`
 	Subject string       `json:"Subject,omitempty"`
 }
 
