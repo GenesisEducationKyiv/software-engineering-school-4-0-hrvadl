@@ -63,17 +63,18 @@ func (c *Client) handleDone(ctx context.Context, err error, in *pb.Mail) error {
 func (c *Client) send(in *pb.Mail) <-chan error {
 	done := make(chan error, 1)
 
-	m := gomail.NewMessage()
-	m.SetHeader("From", c.from)
-	m.SetHeader("To", in.GetTo()...)
-	m.SetHeader("Subject", in.GetSubject())
-	m.SetBody("text/html", in.GetHtml())
-
 	go func() {
+		m := gomail.NewMessage()
+		m.SetHeader("From", c.from)
+		m.SetHeader("To", in.GetTo()...)
+		m.SetHeader("Subject", in.GetSubject())
+		m.SetBody("text/html", in.GetHtml())
+
 		if err := c.dialer.DialAndSend(m); err != nil {
 			done <- fmt.Errorf("%s: failed to dial and send: %w", operation, err)
 			return
 		}
+
 		done <- nil
 	}()
 
