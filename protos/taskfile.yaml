@@ -2,34 +2,9 @@ version: "3"
 
 tasks:
   generate:
+    deps: [install:deps]
     cmds:
-      - task: generate:rw
-      - task: generate:mailer
-      - task: generate:sub
-
-  generate:rw:
+      - buf generate
+  install:deps:
     cmds:
-      - |
-        protoc -I proto proto/v1/ratewatcher/rw.proto \
-        --go_out=./gen/go \
-        --go-grpc_out=./gen/go \
-        --go_opt=paths=source_relative \
-        --go-grpc_opt=paths=source_relative
-
-  generate:mailer:
-    cmds:
-      - |
-        protoc -I proto proto/v1/mailer/mailer.proto \
-        --go_out=./gen/go \
-        --go-grpc_out=./gen/go \
-        --go_opt=paths=source_relative \
-        --go-grpc_opt=paths=source_relative
-
-  generate:sub:
-    cmds:
-      - |
-        protoc -I proto proto/v1/sub/sub.proto \
-        --go_out=./gen/go \
-        --go-grpc_out=./gen/go \
-        --go_opt=paths=source_relative \
-        --go-grpc_opt=paths=source_relative
+      - buf dep update

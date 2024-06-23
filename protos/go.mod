@@ -3,6 +3,8 @@ module github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pr
 go 1.22.0
 
 require (
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
 )

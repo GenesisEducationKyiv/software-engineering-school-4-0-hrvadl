@@ -1,12 +1,15 @@
 syntax = "proto3";
 package ratewatcher.v1;
 
+import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
 option go_package = "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/v1/ratewatcher";
 
 service RateWatcherService {
-  rpc GetRate(google.protobuf.Empty) returns (RateResponse);
+  rpc GetRate(google.protobuf.Empty) returns (RateResponse) {
+    option (google.api.http) = {get: "/api/v1/rate"};
+  }
 }
 
 message RateResponse {
