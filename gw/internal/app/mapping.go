@@ -8,8 +8,6 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 )
 
 func newResponseMapper(log *slog.Logger) *responseMapper {
@@ -38,29 +36,4 @@ func (rm *responseMapper) mapGRPCErr(
 	if _, err := w.Write(res); err != nil {
 		rm.log.Error("Failed to write error", slog.Any("err", err))
 	}
-}
-
-func (rm *responseMapper) mapGRPCResp(
-	_ context.Context,
-	w http.ResponseWriter,
-	m proto.Message,
-) error {
-	marshaler := runtime.JSONPb{
-		MarshalOptions: protojson.MarshalOptions{
-			EmitUnpopulated: true,
-			UseProtoNames:   true,
-		},
-	}
-	jsonBytes, err := marshaler.Marshal(m)
-	if err != nil {
-		return err
-	}
-
-	buf, err := json.Marshal(newSuccessResponse("success", json.RawMessage(jsonBytes)))
-	if err != nil {
-		return err
-	}
-
-	_, err = w.Write(buf)
-	return err
 }

@@ -64,8 +64,7 @@ func (a *App) Run() error {
 	rm := newResponseMapper(a.log.With(slog.String("source", "responseMapper")))
 	mux := runtime.NewServeMux(
 		runtime.WithErrorHandler(rm.mapGRPCErr),
-		runtime.WithForwardResponseOption(rm.mapGRPCResp),
-		runtime.WithMarshalerOption(runtime.MIMEWildcard, newNilMarshaller()),
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, newMarshaller()),
 	)
 
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
