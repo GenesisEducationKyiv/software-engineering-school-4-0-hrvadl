@@ -21,7 +21,8 @@ paths:
             $ref: '#/definitions/v1RateResponse'
           examples:
             application/json:
-              data: 42
+              data:
+                rate: 42
               message: successfully got rate
               success: true
         "400":
@@ -29,7 +30,7 @@ paths:
           schema: {}
           examples:
             application/json:
-              message: successfully got rate
+              message: failed to get rate
               success: false
         default:
           description: An unexpected error response.

@@ -27,7 +27,7 @@ service SubService {
           description: "Returned when there was error on server side"
           examples: {
             key: "application/json"
-            value: "{\"message\": \"internal server error\"}"
+            value: "{\"message\": \"internal server error\", \"success\": false}"
           };
         };
       };
@@ -37,7 +37,7 @@ service SubService {
           description: "Returned when email is not valid"
           examples: {
             key: "application/json"
-            value: "{\"message\": \"email is not valid\"}"
+            value: "{\"message\": \"email is not valid\", \"success\": false}"
           };
         };
       };
@@ -47,7 +47,7 @@ service SubService {
           description: "Returned when email was already used"
           examples: {
             key: "application/json"
-            value: "{\"message\": \"email is already used\"}"
+            value: "{\"message\": \"email is already used\", \"success\": false}"
           };
         };
       };
@@ -57,7 +57,7 @@ service SubService {
           description: "Returned when user was successfully subscribed"
           examples: {
             key: "application/json"
-            value: "{\"message\": \"added email\"}"
+            value: "{\"message\": \"added email\", \"success\": true}"
           };
         };
       };

@@ -20,7 +20,7 @@ service RateWatcherService {
           description: "Returned when there was error on server side"
           examples: {
             key: "application/json"
-            value: "{\"message\": \"successfully got rate\"}"
+            value: "{\"message\": \"failed to get rate\", \"success\": false}"
           };
         };
       }
@@ -30,7 +30,7 @@ service RateWatcherService {
           description: "Returned successfully fetched exchange rate"
           examples: {
             key: "application/json"
-            value: "{\"data\": 42}"
+            value: "{\"message\": \"successfully got rate\", \"success\": true, \"data\": {\"rate\": 42}}"
           };
         };
       }
