@@ -8,3 +8,15 @@ tasks:
   install:deps:
     cmds:
       - buf dep update
+  run:docs:
+    deps: [install:swagger]
+    cmds:
+      - |
+        docker run -p 3000:8080 -e BASE_URL=/swagger \
+        -e SWAGGER_JSON=/docs/swagger.json \
+        -v /gen/openapiv2/v1:/docs swaggerapi/swagger-ui
+  install:swagger:
+    cmds:
+      - docker pull swaggerapi/swagger-ui
+    status:
+      - docker images | grep swagger-ui

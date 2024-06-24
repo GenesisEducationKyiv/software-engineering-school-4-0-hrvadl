@@ -1,0 +1,79 @@
+swagger: "2.0"
+info:
+  title: v1/sub/sub.proto
+  version: version not set
+tags:
+  - name: Subscription serivce
+    description: Service responsible for subscribing users and sending rate exchange notifications
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /api/v1/subscribe:
+    post:
+      summary: Subscribe user
+      description: Subscribe user
+      operationId: SubService_Subscribe
+      responses:
+        "200":
+          description: Returned when user was successfully subscribed
+          schema:
+            type: object
+            properties: {}
+          examples:
+            application/json:
+              message: added email
+              success: true
+        "400":
+          description: Returned when email is not valid
+          schema: {}
+          examples:
+            application/json:
+              message: email is not valid
+              success: false
+        "409":
+          description: Returned when email was already used
+          schema: {}
+          examples:
+            application/json:
+              message: email is already used
+              success: false
+        "500":
+          description: Returned when there was error on server side
+          schema: {}
+          examples:
+            application/json:
+              message: internal server error
+              success: false
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: email
+          in: query
+          required: true
+          type: string
+      tags:
+        - user subscribe subscription
+definitions:
+  protobufAny:
+    type: object
+    properties:
+      '@type':
+        type: string
+    additionalProperties: {}
+  rpcStatus:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      details:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/protobufAny'

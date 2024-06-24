@@ -1,16 +1,72 @@
 syntax = "proto3";
 package sub.v1;
 
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
 
 option go_package = "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/v1/sub";
 
+
 service SubService {
-  rpc Subscribe(SubscribeRequest) returns (google.protobuf.Empty);
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
+    name: "Subscription serivce";
+    description: "Service responsible for subscribing users and sending rate exchange notifications";
+  };
+  rpc Subscribe(SubscribeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {post: "/api/v1/subscribe"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Subscribe user";
+      summary: "Subscribe user";
+      tags: "user subscribe subscription"
+      responses: {
+        key: "500"
+        value: {
+          description: "Returned when there was error on server side"
+          examples: {
+            key: "application/json"
+            value: "{\"message\": \"internal server error\", \"success\": false}"
+          };
+        };
+      };
+      responses: {
+        key: "400"
+        value: {
+          description: "Returned when email is not valid"
+          examples: {
+            key: "application/json"
+            value: "{\"message\": \"email is not valid\", \"success\": false}"
+          };
+        };
+      };
+      responses: {
+        key: "409"
+        value: {
+          description: "Returned when email was already used"
+          examples: {
+            key: "application/json"
+            value: "{\"message\": \"email is already used\", \"success\": false}"
+          };
+        };
+      };
+      responses: {
+        key: "200"
+        value: {
+          description: "Returned when user was successfully subscribed"
+          examples: {
+            key: "application/json"
+            value: "{\"message\": \"added email\", \"success\": true}"
+          };
+        };
+      };
+    };
+  };
 }
 
 message SubscribeRequest {
-  string email = 1;
+  string email = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 enum ErrorCode {
