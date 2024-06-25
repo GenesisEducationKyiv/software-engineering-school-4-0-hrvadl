@@ -49,7 +49,7 @@ func invalidEmailToGRPCStatus(err error) error {
 }
 
 func alreadyExistsToGRPCStatus(err error) error {
-	s := status.New(codes.InvalidArgument, err.Error())
+	s := status.New(codes.Aborted, err.Error())
 	badReq := &pb.BadRequest{
 		Code:        pb.ErrorCode_ERROR_CODE_ALREADY_EXISTS,
 		Field:       "email",

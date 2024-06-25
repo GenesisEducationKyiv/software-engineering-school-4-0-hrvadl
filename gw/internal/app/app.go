@@ -11,16 +11,14 @@ import (
 	"time"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
-	"github.com/go-chi/chi/v5"
+	rw "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/ratewatcher"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/sub"
 	"github.com/go-chi/chi/v5/middleware"
-	httpSwagger "github.com/swaggo/http-swagger"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
-	_ "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/gw/docs"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/gw/internal/cfg"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/gw/internal/transport/grpc/clients/ratewatcher"
-	ssvc "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/gw/internal/transport/grpc/clients/sub"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/gw/internal/transport/http/handlers/rate"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/gw/internal/transport/http/handlers/sub"
 )
 
 const operation = "app init"
@@ -59,50 +57,32 @@ func (a *App) MustRun() {
 // starts listening on the provided ports. Could return an error if any of
 // described above steps failed
 func (a *App) Run() error {
-	rw, err := ratewatcher.NewClient(
-		a.cfg.RateWatcherAddr,
-		a.log.With(slog.String("source", "rateWatcherClient")),
-	)
-	if err != nil {
-		return fmt.Errorf("%s: failed to initialize ratewatcher client: %w", operation, err)
-	}
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
-	subsvc, err := ssvc.NewClient(a.cfg.SubAddr, a.log.With(slog.String("source", "subClient")))
-	if err != nil {
-		return fmt.Errorf("%s: failed to init sub service: %w", operation, err)
-	}
-
-	sh := sub.NewHandler(subsvc, a.log.With(slog.String("source", "subHandler")))
-	rh := rate.NewHandler(rw, a.log.With(slog.String("source", "rateHandler")))
-
-	r := chi.NewRouter()
-	r.Use(
-		middleware.Heartbeat("/health"),
-		middleware.Recoverer,
-		middleware.Logger,
-		middleware.CleanPath,
-		middleware.SetHeader("Content-Type", "application/octet-stream"),
+	rm := newResponseMapper(a.log.With(slog.String("source", "responseMapper")))
+	mux := runtime.NewServeMux(
+		runtime.WithErrorHandler(rm.mapGRPCErr),
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, newMarshaller()),
 	)
 
-	r.Route("/api", func(r chi.Router) {
-		r.Get("/rate", rh.GetRate)
-		r.With(
-			middleware.AllowContentType("application/x-www-form-urlencoded"),
-		).Post("/subscribe", sh.Subscribe)
-	})
-
-	if a.cfg.LogLevel == "DEBUG" {
-		r.Get("/docs/*", httpSwagger.WrapHandler)
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	if err := rw.RegisterRateWatcherServiceHandlerFromEndpoint(ctx, mux, a.cfg.RateWatcherAddr, opts); err != nil {
+		return fmt.Errorf("%s: failed to create proxy for rw grpc svc: %w", operation, err)
 	}
 
-	a.log.Info("Starting web server", slog.String("addr", a.cfg.Addr))
-	a.srv = newServer(
-		r,
+	if err := sub.RegisterSubServiceHandlerFromEndpoint(ctx, mux, a.cfg.SubAddr, opts); err != nil {
+		return fmt.Errorf("%s: failed to create proxy for sub grpc svc: %w", operation, err)
+	}
+
+	s := newServer(
+		middleware.Logger(mux),
 		a.cfg.Addr,
 		slog.NewLogLogger(a.log.Handler(), logger.MapLevels(a.cfg.LogLevel)),
 	)
 
-	return a.srv.ListenAndServe()
+	return s.ListenAndServe()
 }
 
 // GracefulStop method gracefully stop the server. It listens to the OS sigals.
