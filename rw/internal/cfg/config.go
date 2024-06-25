@@ -11,10 +11,12 @@ const operation = "config parsing"
 // Config struct represents application config,
 // which is used application-wide.
 type Config struct {
-	ExchangeServiceBaseURL         string `env:"API_BASE_URL,required,notEmpty"`
-	ExchangeFallbackServiceBaseURL string `env:"API_FALLBACK_BASE_URL,required,notEmpty"`
-	LogLevel                       string `env:"LOG_LEVEL,required,notEmpty"`
-	Port                           string `env:"PORT,required,notEmpty"`
+	ExchangeServiceBaseURL               string `env:"API_BASE_URL,required,notEmpty"`
+	ExchangeFallbackServiceBaseURL       string `env:"API_FALLBACK_BASE_URL,required,notEmpty"`
+	ExchangeFallbackSecondServiceBaseURL string `env:"API_FALLBACK2_BASE_URL,required,notEmpty"`
+	ExchangeFallbackSecondServiceToken   string `env:"API_FALLBACK2_TOKEN,required,notEmpty"`
+	LogLevel                             string `env:"LOG_LEVEL,required,notEmpty"`
+	Port                                 string `env:"PORT,required,notEmpty"`
 }
 
 // Must is a handly wrapper around return results from

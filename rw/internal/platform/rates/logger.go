@@ -30,6 +30,6 @@ func (c *WithLoggerDecorator) Convert(ctx context.Context) (float32, error) {
 		return res, err
 	}
 
-	c.log.Error("Received response from exchange API", slog.Any("res", res))
+	c.log.Info("Received response from exchange API", slog.Any("res", res))
 	return res, err
 }

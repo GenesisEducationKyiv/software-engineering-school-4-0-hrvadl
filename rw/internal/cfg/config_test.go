@@ -10,10 +10,12 @@ import (
 )
 
 const (
-	exchangeServiceBaseURLEnvKey         = "EXCHANGE_API_BASE_URL"
-	exchangeFallbackServiceBaseURLEnvKey = "EXCHANGE_API_FALLBACK_BASE_URL"
-	logLevelEnvKey                       = "EXCHANGE_LOG_LEVEL"
-	portEnvKey                           = "EXCHANGE_PORT"
+	exchangeServiceBaseURLEnvKey               = "EXCHANGE_API_BASE_URL"
+	exchangeFallbackServiceBaseURLEnvKey       = "EXCHANGE_API_FALLBACK_BASE_URL"
+	exchangeFallbackSecondServiceBaseURLEnvKey = "EXCHANGE_API_FALLBACK2_BASE_URL"
+	exchangeFallbackSecondServiceToken         = "EXCHANGE_API_FALLBACK2_TOKEN" // #nosec G101
+	logLevelEnvKey                             = "EXCHANGE_LOG_LEVEL"
+	portEnvKey                                 = "EXCHANGE_PORT"
 )
 
 func TestMust(t *testing.T) {
@@ -80,12 +82,16 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
 				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
+				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
+				t.Setenv(exchangeFallbackSecondServiceToken, "token")
 			},
 			want: &Config{
-				LogLevel:                       "debug",
-				Port:                           "80",
-				ExchangeServiceBaseURL:         "http://exchange.com",
-				ExchangeFallbackServiceBaseURL: "http://exchange1.com",
+				LogLevel:                             "debug",
+				Port:                                 "80",
+				ExchangeServiceBaseURL:               "http://exchange.com",
+				ExchangeFallbackServiceBaseURL:       "http://exchange1.com",
+				ExchangeFallbackSecondServiceBaseURL: "http://exchange2.com",
+				ExchangeFallbackSecondServiceToken:   "token",
 			},
 			wantErr: false,
 		},
@@ -97,6 +103,8 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
 				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
+				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
+				t.Setenv(exchangeFallbackSecondServiceToken, "token")
 			},
 			want:    nil,
 			wantErr: true,
@@ -109,6 +117,8 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(portEnvKey, "")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
 				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
+				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
+				t.Setenv(exchangeFallbackSecondServiceToken, "token")
 			},
 			want:    nil,
 			wantErr: true,
@@ -120,6 +130,8 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
+				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
+				t.Setenv(exchangeFallbackSecondServiceToken, "token")
 			},
 			want:    nil,
 			wantErr: true,
@@ -131,6 +143,34 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "80")
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
+				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
+				t.Setenv(exchangeFallbackSecondServiceToken, "token")
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Should not parse config when second fallback token is missing",
+			setup: func(t *testing.T) {
+				t.Helper()
+				t.Setenv(logLevelEnvKey, "debug")
+				t.Setenv(portEnvKey, "80")
+				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
+				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
+				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Should not parse config when second fallback base URL is missing",
+			setup: func(t *testing.T) {
+				t.Helper()
+				t.Setenv(logLevelEnvKey, "debug")
+				t.Setenv(portEnvKey, "80")
+				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
+				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
+				t.Setenv(exchangeFallbackSecondServiceToken, "token")
 			},
 			want:    nil,
 			wantErr: true,
