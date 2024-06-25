@@ -70,18 +70,17 @@ func TestClientSend(t *testing.T) {
 	type fields struct {
 		dialer *gomail.Dialer
 		from   string
-		next   ChainedSender
 	}
 	type args struct {
 		ctx context.Context
 		in  *pb.Mail
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		setup   func(t *testing.T, sender ChainedSender)
-		wantErr bool
+		name          string
+		fields        fields
+		args          args
+		chainedSender func(ctrl *gomock.Controller) *mocks.MockChainedSender
+		wantErr       bool
 	}{
 		{
 			name: "Should fallback when failed",
@@ -96,18 +95,16 @@ func TestClientSend(t *testing.T) {
 			fields: fields{
 				dialer: gomail.NewDialer("test.com", 222, "from@from.com", "secret"),
 				from:   "from@from.com",
-				next:   mocks.NewMockChainedSender(gomock.NewController(t)),
 			},
 			wantErr: false,
-			setup: func(t *testing.T, sender ChainedSender) {
-				t.Helper()
-				s, ok := sender.(*mocks.MockChainedSender)
-				require.True(t, ok, "Failed to cast sender to mock")
+			chainedSender: func(ctrl *gomock.Controller) *mocks.MockChainedSender {
+				s := mocks.NewMockChainedSender(ctrl)
 				s.EXPECT().Send(gomock.Any(), &pb.Mail{
 					To:      []string{"to@to.com", "to1@to.com"},
 					Html:    "html",
 					Subject: "subject",
 				}).Times(1).Return(nil)
+				return s
 			},
 		},
 		{
@@ -123,18 +120,16 @@ func TestClientSend(t *testing.T) {
 			fields: fields{
 				dialer: gomail.NewDialer("test.com", 222, "from@from.com", "secret"),
 				from:   "from@from.com",
-				next:   mocks.NewMockChainedSender(gomock.NewController(t)),
 			},
 			wantErr: true,
-			setup: func(t *testing.T, sender ChainedSender) {
-				t.Helper()
-				s, ok := sender.(*mocks.MockChainedSender)
-				require.True(t, ok, "Failed to cast sender to mock")
+			chainedSender: func(ctrl *gomock.Controller) *mocks.MockChainedSender {
+				s := mocks.NewMockChainedSender(ctrl)
 				s.EXPECT().Send(gomock.Any(), &pb.Mail{
 					To:      []string{"to@to.com", "to1@to.com"},
 					Html:    "html",
 					Subject: "subject",
 				}).Times(1).Return(errors.New("failed to send"))
+				return s
 			},
 		},
 	}
@@ -142,11 +137,12 @@ func TestClientSend(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			tt.setup(t, tt.fields.next)
+			ctrl := gomock.NewController(t)
+			sender := tt.chainedSender(ctrl)
 			c := &Client{
 				dialer: tt.fields.dialer,
 				from:   tt.fields.from,
-				next:   tt.fields.next,
+				next:   sender,
 			}
 
 			err := c.Send(tt.args.ctx, tt.args.in)
