@@ -5,6 +5,7 @@ package privat
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -75,4 +76,10 @@ func TestClientConvert(t *testing.T) {
 			require.NotZero(t, got)
 		})
 	}
+}
+
+func newImmediateCtx() context.Context {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
+	defer cancel()
+	return ctx
 }

@@ -10,8 +10,9 @@ import (
 	"time"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/mailpit"
-	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
 	"github.com/stretchr/testify/require"
+
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/models/mail"
 )
 
 const (
@@ -31,7 +32,7 @@ func TestClientSend(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		in  *pb.Mail
+		in  mail.Mail
 	}
 	tests := []struct {
 		name    string
@@ -44,9 +45,9 @@ func TestClientSend(t *testing.T) {
 			wantErr: false,
 			args: args{
 				ctx: context.Background(),
-				in: &pb.Mail{
+				in: mail.Mail{
 					To:      []string{"test@gmail.com"},
-					Html:    "hello",
+					HTML:    "hello",
 					Subject: "world",
 				},
 			},
@@ -62,9 +63,9 @@ func TestClientSend(t *testing.T) {
 			wantErr: false,
 			args: args{
 				ctx: context.Background(),
-				in: &pb.Mail{
+				in: mail.Mail{
 					To:      []string{"test@gmail.com", "test2@gmail.com"},
-					Html:    "hello",
+					HTML:    "hello",
 					Subject: "world",
 				},
 			},
@@ -80,9 +81,9 @@ func TestClientSend(t *testing.T) {
 			wantErr: true,
 			args: args{
 				ctx: newImmediateCtx(),
-				in: &pb.Mail{
+				in: mail.Mail{
 					To:      []string{"test@gmail.com", "invalid.com"},
-					Html:    "hello",
+					HTML:    "hello",
 					Subject: "world",
 				},
 			},
@@ -98,9 +99,9 @@ func TestClientSend(t *testing.T) {
 			wantErr: true,
 			args: args{
 				ctx: context.Background(),
-				in: &pb.Mail{
+				in: mail.Mail{
 					To:      []string{"test@gmail.com", "invalid.com"},
-					Html:    "hello",
+					HTML:    "hello",
 					Subject: "world",
 				},
 			},
@@ -116,9 +117,9 @@ func TestClientSend(t *testing.T) {
 			wantErr: true,
 			args: args{
 				ctx: context.Background(),
-				in: &pb.Mail{
+				in: mail.Mail{
 					To:      []string{"test@gmail.com", "test2@gmail.com"},
-					Html:    "hello",
+					HTML:    "hello",
 					Subject: "world",
 				},
 			},
@@ -157,8 +158,8 @@ func TestClientSend(t *testing.T) {
 			require.NoError(t, err)
 			require.Empty(t, mail.Cc)
 			require.Empty(t, mail.To)
-			require.Equal(t, tt.args.in.GetTo(), getToMails(mail.Bcc))
-			require.Contains(t, mail.Subject, tt.args.in.GetSubject())
+			require.Equal(t, tt.args.in.To, getToMails(mail.Bcc))
+			require.Contains(t, mail.Subject, tt.args.in.Subject)
 		})
 	}
 }
