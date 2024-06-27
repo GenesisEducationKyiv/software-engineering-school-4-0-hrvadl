@@ -32,10 +32,6 @@ type Client struct {
 // bult-in resend's SDK. Blocks until call is finished, or
 // error is raised, or context is done.
 func (c *Client) Send(ctx context.Context, m mail.Mail) error {
-	if len(m.To) == 0 {
-		return fmt.Errorf("%s: recipients cannot be empty", operation)
-	}
-
 	done := c.send(m)
 
 	select {
