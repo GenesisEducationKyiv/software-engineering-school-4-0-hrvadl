@@ -36,12 +36,18 @@ If you want to run it as a standalone service you need:
 1. Populate env vars needed for it in root `.env` file (../.env)
 2. Run `task run` from `./rw` dir or `task rw:run` from the root of the repo
 
+## App diagram
+
+<img width="881" alt="image" src="https://github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/assets/93580374/86162624-4184-4371-b4af-b1db5768b78c">
+
 ## Folder structure
 
 1. `pkg` contains possibly reusable package, not binded to this project. Currently it contains only logger utils
 2. `internal`contains packages binded to this project.
-   2.1. `cfg` contains config which is read from environment vars.
-   2.2. `app` is an abstraction with all services initialization.
-   2.3. `transport` contains all transport layer logic: grpc server.
-3. `cmd` contains entrypoints to the program.
-4. `platform` contains specific implementations for querying latest rate exhange, which could change/be changed.
+   
+   - `cfg` contains config which is read from environment vars.
+   - `app` is an abstraction with all services initialization.
+   - `transport` contains all transport layer logic: grpc server.
+   - `service` contains all domain logic
+4. `cmd` contains entrypoints to the program.
+5. `platform` contains specific implementations for querying latest rate exhange, which could change/be changed.
