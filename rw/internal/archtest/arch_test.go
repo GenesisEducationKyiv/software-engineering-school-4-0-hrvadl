@@ -17,7 +17,7 @@ func TestDependencies(t *testing.T) {
 		cfg  config.Config
 	}{
 		{
-			name: "cmd should depends only on internal/cmd/pkg",
+			name: "cmd should depend only on internal/cmd/pkg",
 			cfg: config.Config{
 				DependenciesRules: []*config.DependenciesRule{
 					{
@@ -30,7 +30,7 @@ func TestDependencies(t *testing.T) {
 			},
 		},
 		{
-			name: "internal should not depends cmd",
+			name: "internal should not depend cmd",
 			cfg: config.Config{
 				DependenciesRules: []*config.DependenciesRule{
 					{
@@ -43,7 +43,7 @@ func TestDependencies(t *testing.T) {
 			},
 		},
 		{
-			name: "pkg should not depends cmd/internal",
+			name: "pkg should not depend cmd/internal",
 			cfg: config.Config{
 				DependenciesRules: []*config.DependenciesRule{
 					{
@@ -56,7 +56,7 @@ func TestDependencies(t *testing.T) {
 			},
 		},
 		{
-			name: "platform should not depends on other pkg",
+			name: "platform should not depend on other pkg",
 			cfg: config.Config{
 				DependenciesRules: []*config.DependenciesRule{
 					{
