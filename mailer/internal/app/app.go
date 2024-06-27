@@ -17,7 +17,8 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/cfg"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/gomail"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/resend"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/grpc/server/mailer"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/mail"
+	mailSrv "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/grpc/server/mailer"
 )
 
 const operation = "app init"
@@ -65,11 +66,13 @@ func (a *App) Run() error {
 		a.cfg.MailerHost,
 		a.cfg.MailerPort,
 	)
-	gomail.SetNext(resend)
 
-	mailer.Register(
+	mailSvc := mail.NewService(gomail)
+	mailSvc.SetNext(resend)
+
+	mailSrv.Register(
 		a.srv,
-		gomail,
+		mailSvc,
 		a.log.With(slog.String("source", "mailerSrv")),
 	)
 

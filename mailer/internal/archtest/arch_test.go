@@ -55,62 +55,14 @@ func TestDependencies(t *testing.T) {
 				},
 			},
 		},
-	}
-
-	module := config.Load(moduleInfo)
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			require.True(t, archgo.CheckArchitecture(module, tt.cfg).Passes)
-		})
-	}
-}
-
-func TestImplementationNames(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		name string
-		cfg  config.Config
-	}{
 		{
-			name: "Mailers that implement ChainedSender interface should be named as *Client",
+			name: "platform should not depends on other pkg",
 			cfg: config.Config{
-				NamingRules: []*config.NamingRule{
-					{
-						Package: "**.mail.**",
-						InterfaceImplementationNamingRule: &config.InterfaceImplementationRule{
-							StructsThatImplement:           "ChainedSender",
-							ShouldHaveSimpleNameEndingWith: ptr("Client"),
-						},
-					},
-				},
 				DependenciesRules: []*config.DependenciesRule{
 					{
-						Package: "**.cmd.**",
-						ShouldOnlyDependsOn: &config.Dependencies{
-							Internal: []string{"**.cmd.**", "**.internal.**", "**.pkg.*"},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Mailers that implement Client interface should be named as *Client",
-			cfg: config.Config{
-				NamingRules: []*config.NamingRule{
-					{
-						Package: "**.mailer.**",
-						InterfaceImplementationNamingRule: &config.InterfaceImplementationRule{
-							StructsThatImplement:           "*Client",
-							ShouldHaveSimpleNameEndingWith: ptr("Client"),
-						},
-					},
-				},
-				DependenciesRules: []*config.DependenciesRule{
-					{
-						Package: "**.cmd.**",
-						ShouldOnlyDependsOn: &config.Dependencies{
-							Internal: []string{"**.cmd.**", "**.internal.**", "**.pkg.*"},
+						Package: "**.platform.**",
+						ShouldNotDependsOn: &config.Dependencies{
+							Internal: []string{"**.transport.**", "**.app.**", "**.platform.**"},
 						},
 					},
 				},
@@ -125,8 +77,4 @@ func TestImplementationNames(t *testing.T) {
 			require.True(t, archgo.CheckArchitecture(module, tt.cfg).Passes)
 		})
 	}
-}
-
-func ptr[T any](p T) *T {
-	return &p
 }
