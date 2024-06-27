@@ -6,6 +6,8 @@ import (
 	model "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/models/mail"
 )
 
+// NewService constructs service with provided
+// default mailer.
 func NewService(m Mailer) *Service {
 	return &Service{
 		mailers: []Mailer{m},
@@ -17,10 +19,19 @@ type Mailer interface {
 	Send(ctx context.Context, m model.Mail) error
 }
 
+// Service struct is responsible for aggregating and
+// invoking underlying specific mailer implementations.
+// If first implementation fails
+// then it will call next one, until it reaches end of
+// mailers slice.
 type Service struct {
 	mailers []Mailer
 }
 
+// Send method is responsible for invoking underlying
+// specific mailer implementations. If first implementation fails
+// then it will call next one, until it reaches end of
+// mailers slice.
 func (s *Service) Send(ctx context.Context, mail model.Mail) error {
 	if mail.HTML == "" {
 		return ErrEmptyContent
@@ -43,6 +54,9 @@ func (s *Service) Send(ctx context.Context, mail model.Mail) error {
 	return err
 }
 
+// SetNext function sets new mailers to the chain of
+// responsibility. Mailers are appended at the end of
+// the queue.
 func (s *Service) SetNext(mailers ...Mailer) {
 	s.mailers = append(s.mailers, mailers...)
 }

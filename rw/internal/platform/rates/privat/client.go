@@ -15,16 +15,23 @@ const (
 	uah = "UAH"
 )
 
+// NewClient initializes new Client with parameters provided.
+// NOTE: neither of arguments can't be empty, because in that case
+// client will inevitably fail in the future.
 func NewClient(url string) *Client {
 	return &Client{
 		url: url,
 	}
 }
 
+// Client struct represents privat bank API client.
+// Note: url should be a base url for  the service, not full url.
 type Client struct {
 	url string
 }
 
+// usdUahResponse represents exchange rate API's response
+// Sale is how much 1 USD is worth in a UAH.
 type rate struct {
 	CCY     string  `json:"ccy,omitempty"`
 	BaseCCY string  `json:"base_ccy,omitempty"`
@@ -32,6 +39,9 @@ type rate struct {
 	Sale    float32 `json:"sale,omitempty,string"`
 }
 
+// Convert method converts 1 USD to UAH accordingly to the
+// latest exchange rate. It's a handly wrapper around internal
+// getRate() function.
 func (c *Client) Convert(ctx context.Context) (float32, error) {
 	res, err := c.getRate(ctx)
 	if err != nil {

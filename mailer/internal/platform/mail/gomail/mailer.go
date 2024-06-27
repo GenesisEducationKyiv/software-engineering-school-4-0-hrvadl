@@ -11,6 +11,8 @@ import (
 
 const operation = "smtp client"
 
+// NewClient constructs new Gomail client
+// with provided credentials.
 func NewClient(from, password, host string, port int) *Client {
 	d := gomail.NewDialer(host, port, from, password)
 	return &Client{
@@ -19,11 +21,17 @@ func NewClient(from, password, host string, port int) *Client {
 	}
 }
 
+// Client is a thin wrapper around Gomail library
+// which will add context support to the existing
+// signature call.
 type Client struct {
 	dialer *gomail.Dialer
 	from   string
 }
 
+// Send method initiates a call to the SMTP server using
+// Gomail's method. Blocks until call is finished, or
+// error is raised, or context is done.
 func (c *Client) Send(ctx context.Context, in mail.Mail) error {
 	done := c.send(in)
 	select {
