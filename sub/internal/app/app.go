@@ -32,8 +32,8 @@ import (
 const operation = "app init"
 
 const (
-	cronJobHour    = 15
-	cronJobMinute  = 27
+	cronJobHour    = 12
+	cronJobMinute  = 0o0
 	cronJobTimeout = time.Minute * 1
 )
 
@@ -50,9 +50,10 @@ func New(cfg cfg.Config, log *slog.Logger) *App {
 // db connections, and GRPC server/clients. Could return an error if any
 // of described above steps failed.
 type App struct {
-	cfg cfg.Config
-	log *slog.Logger
-	srv *grpc.Server
+	cfg  cfg.Config
+	log  *slog.Logger
+	srv  *grpc.Server
+	nats *nats.Conn
 }
 
 // MustRun is a wrapper around App.Run() function which could be handly
@@ -94,12 +95,12 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to rate watcher: %w", operation, err)
 	}
 
-	conn, err := nats.Connect(a.cfg.NatsURL)
+	a.nats, err = nats.Connect(a.cfg.NatsURL)
 	if err != nil {
 		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
 	}
 
-	m := mailer.NewClient(conn, a.log.With(slog.String("source", "mailer")))
+	m := mailer.NewClient(a.nats, a.log.With(slog.String("source", "mailer")))
 	mailSender := sender.New(
 		m,
 		sg,
@@ -140,5 +141,6 @@ func (a *App) GracefulStop() {
 	signal := <-ch
 	a.log.Info("Received stop signal. Terminating...", slog.Any("signal", signal))
 	a.srv.Stop()
+	a.nats.Close()
 	a.log.Info("Successfully terminated server. Bye!")
 }
