@@ -5,7 +5,7 @@ package mail
 // I possibly avoid dublication in naming.
 
 type Mail struct {
-	To      []string
-	Subject string
-	HTML    string
+	To      []string `json:"to"`
+	Subject string   `json:"subject"`
+	HTML    string   `json:"html"`
 }

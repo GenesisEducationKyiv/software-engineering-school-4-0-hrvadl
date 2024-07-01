@@ -23,16 +23,17 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/validator"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/platform/db"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/clients/mailer"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/clients/ratewatcher"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/server/sub"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/nats/client/mailer"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/pkg/nats"
 )
 
 const operation = "app init"
 
 const (
-	cronJobHour    = 12
-	cronJobMinute  = 0o0
+	cronJobHour    = 14
+	cronJobMinute  = 47
 	cronJobTimeout = time.Minute * 1
 )
 
@@ -83,11 +84,6 @@ func (a *App) Run() error {
 	svc := subs.NewService(sr, v)
 	sub.Register(a.srv, svc, a.log.With(slog.String("source", "sub")))
 
-	m, err := mailer.NewClient(a.cfg.MailerAddr, a.log)
-	if err != nil {
-		return fmt.Errorf("%s: failed to connect to mailer service: %w", operation, err)
-	}
-
 	sg := subscriber.NewRepo(db)
 	fmter := formatter.NewWithDate()
 	rw, err := ratewatcher.NewClient(
@@ -98,6 +94,12 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to rate watcher: %w", operation, err)
 	}
 
+	nats, err := nats.NewClient(a.cfg.NatsURL)
+	if err != nil {
+		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
+	}
+
+	m := mailer.NewClient(nats, a.log.With(slog.String("source", "mailer")))
 	mailSender := sender.New(
 		m,
 		sg,

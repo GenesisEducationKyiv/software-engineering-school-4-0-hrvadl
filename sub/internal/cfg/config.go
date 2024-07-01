@@ -16,6 +16,7 @@ type Config struct {
 	RateWatcherAddr string `env:"RATE_WATCH_ADDR,required,notEmpty"`
 	Port            string `env:"SUB_PORT,required,notEmpty"`
 	LogLevel        string `env:"SUB_LOG_LEVEL,required,notEmpty"`
+	NatsURL         string `env:"NATS_URL,required,notEmpty"`
 }
 
 // Must is a handly wrapper around return results from

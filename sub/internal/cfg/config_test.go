@@ -15,6 +15,7 @@ const (
 	logLevelEnvKey          = "SUB_LOG_LEVEL"
 	portEnvKey              = "SUB_PORT"
 	dsnEnvKey               = "SUB_DSN"
+	natsURLEnvKey           = "NATS_URL"
 )
 
 func TestMust(t *testing.T) {
@@ -82,6 +83,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "3030")
 				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 			},
 			want: &Config{
 				MailerAddr:      "mailer:80",
@@ -89,6 +91,7 @@ func TestNewFromEnv(t *testing.T) {
 				LogLevel:        "debug",
 				Port:            "3030",
 				Dsn:             "mysql://test:tests@(db:testse)/shgsoh",
+				NatsURL:         "nats://nats:4222",
 			},
 			wantErr: false,
 		},
@@ -100,6 +103,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "3030")
 				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 			},
 			want:    nil,
 			wantErr: true,
@@ -113,6 +117,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "3030")
 				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 			},
 			want:    nil,
 			wantErr: true,
@@ -126,6 +131,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "")
 				t.Setenv(portEnvKey, "3030")
 				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 			},
 			want:    nil,
 			wantErr: true,
@@ -139,6 +145,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "")
 				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 			},
 			want:    nil,
 			wantErr: true,
@@ -152,6 +159,20 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "801")
 				t.Setenv(dsnEnvKey, "")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Should not parse config when nats URL is missing",
+			setup: func(t *testing.T) {
+				t.Helper()
+				t.Setenv(mailerServiceAddrEnvKey, "mailer:80")
+				t.Setenv(rateWatchAddrEnvKey, "rw:2209")
+				t.Setenv(logLevelEnvKey, "debug")
+				t.Setenv(portEnvKey, "4040")
+				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
 			},
 			want:    nil,
 			wantErr: true,
