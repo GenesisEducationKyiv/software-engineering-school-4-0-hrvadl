@@ -51,11 +51,7 @@ func (c *Client) send(m *pb.Mail) <-chan error {
 			return
 		}
 
-		if err := c.pub.Publish(subject, bytes); err != nil {
-			ch <- err
-			return
-		}
-		ch <- nil
+		ch <- c.pub.Publish(subject, bytes)
 	}()
 
 	return ch
