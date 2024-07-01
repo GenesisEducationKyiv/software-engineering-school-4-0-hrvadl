@@ -30,7 +30,7 @@ type Client struct {
 	url string
 }
 
-// usdUahResponse represents exchange rate API's response
+// rate represents exchange rate API's response
 // Sale is how much 1 USD is worth in a UAH.
 type rate struct {
 	CCY     string  `json:"ccy,omitempty"`
