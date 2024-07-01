@@ -7,9 +7,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
+	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
@@ -18,10 +20,12 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/gomail"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/resend"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/mail"
-	mailSrv "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/grpc/server/mailer"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/nats/subscriber/mailer"
 )
 
 const operation = "app init"
+
+const mailerTimeout = time.Second * 5
 
 // New constructs new App with provided arguments.
 // NOTE: than neither cfg or log can't be nil or App will panic.
@@ -36,9 +40,10 @@ func New(cfg cfg.Config, log *slog.Logger) *App {
 // db connections, and GRPC server/clients. Could return an error if any
 // of described above steps failed.
 type App struct {
-	cfg cfg.Config
-	log *slog.Logger
-	srv *grpc.Server
+	cfg  cfg.Config
+	log  *slog.Logger
+	srv  *grpc.Server
+	nats *nats.Conn
 }
 
 // MustRun is a wrapper around App.Run() function which could be handly
@@ -70,11 +75,16 @@ func (a *App) Run() error {
 	mailSvc := mail.NewService(gomail)
 	mailSvc.SetNext(resend)
 
-	mailSrv.Register(
-		a.srv,
-		mailSvc,
-		a.log.With(slog.String("source", "mailerSrv")),
-	)
+	var err error
+	a.nats, err = nats.Connect(a.cfg.NatsURL)
+	if err != nil {
+		return fmt.Errorf("%s: failed to connect to nats: %w", operation, err)
+	}
+
+	m := mailer.New(a.nats, mailSvc, a.log.With(slog.String("source", "mailerSrv")), mailerTimeout)
+	if err = m.Subscribe(); err != nil {
+		return fmt.Errorf("%s: failed to subscribe: %w", operation, err)
+	}
 
 	healthcheck := health.NewServer()
 	healthgrpc.RegisterHealthServer(a.srv, healthcheck)
@@ -100,5 +110,6 @@ func (a *App) GracefulStop() {
 	signal := <-ch
 	a.log.Info("Received stop signal. Terminating...", slog.Any("signal", signal))
 	a.srv.Stop()
+	a.nats.Close()
 	a.log.Info("Successfully terminated server. Bye!")
 }

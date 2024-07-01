@@ -11,6 +11,7 @@ import (
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/ratewatcher"
+	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
@@ -23,9 +24,9 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/validator"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/platform/db"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/clients/mailer"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/clients/ratewatcher"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/server/sub"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/nats/client/mailer"
 )
 
 const operation = "app init"
@@ -49,9 +50,10 @@ func New(cfg cfg.Config, log *slog.Logger) *App {
 // db connections, and GRPC server/clients. Could return an error if any
 // of described above steps failed.
 type App struct {
-	cfg cfg.Config
-	log *slog.Logger
-	srv *grpc.Server
+	cfg  cfg.Config
+	log  *slog.Logger
+	srv  *grpc.Server
+	nats *nats.Conn
 }
 
 // MustRun is a wrapper around App.Run() function which could be handly
@@ -83,11 +85,6 @@ func (a *App) Run() error {
 	svc := subs.NewService(sr, v)
 	sub.Register(a.srv, svc, a.log.With(slog.String("source", "sub")))
 
-	m, err := mailer.NewClient(a.cfg.MailerAddr, a.log)
-	if err != nil {
-		return fmt.Errorf("%s: failed to connect to mailer service: %w", operation, err)
-	}
-
 	sg := subscriber.NewRepo(db)
 	fmter := formatter.NewWithDate()
 	rw, err := ratewatcher.NewClient(
@@ -98,6 +95,12 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to rate watcher: %w", operation, err)
 	}
 
+	a.nats, err = nats.Connect(a.cfg.NatsURL)
+	if err != nil {
+		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
+	}
+
+	m := mailer.NewClient(a.nats, a.log.With(slog.String("source", "mailer")))
 	mailSender := sender.New(
 		m,
 		sg,
@@ -138,5 +141,6 @@ func (a *App) GracefulStop() {
 	signal := <-ch
 	a.log.Info("Received stop signal. Terminating...", slog.Any("signal", signal))
 	a.srv.Stop()
+	a.nats.Close()
 	a.log.Info("Successfully terminated server. Bye!")
 }
