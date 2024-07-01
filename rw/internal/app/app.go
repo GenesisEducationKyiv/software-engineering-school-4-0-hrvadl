@@ -19,6 +19,7 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates/exchangeapi"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates/privat"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates/rateapi"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/service/rw"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/transport/grpc/server/ratewatcher"
 )
 
@@ -60,32 +61,30 @@ func (a *App) Run() error {
 		logger.NewServerGRPCMiddleware(a.log),
 	))
 
-	rateapiRw := rateapi.NewClient(
-		a.cfg.ExchangeFallbackSecondServiceToken,
-		a.cfg.ExchangeFallbackSecondServiceBaseURL,
-	)
-	wrappedRateAPIRw := rates.NewWithLogger(
-		rateapiRw,
+	rateapiRw := rates.NewWithLogger(
+		rateapi.NewClient(
+			a.cfg.ExchangeFallbackSecondServiceToken,
+			a.cfg.ExchangeFallbackSecondServiceBaseURL,
+		),
 		a.log.With(slog.String("source", "rateAPI")),
 	)
 
-	exchangeRw := exchangeapi.NewClient(a.cfg.ExchangeServiceBaseURL)
-	exchangeRw.SetNext(wrappedRateAPIRw)
-	wrappedExchangeRw := rates.NewWithLogger(
-		exchangeRw,
+	exchangeRw := rates.NewWithLogger(
+		exchangeapi.NewClient(a.cfg.ExchangeServiceBaseURL),
 		a.log.With(slog.String("source", "exchangeAPI")),
 	)
 
-	privatRw := privat.NewClient(a.cfg.ExchangeFallbackServiceBaseURL)
-	privatRw.SetNext(wrappedExchangeRw)
-	wrappedPrivat := rates.NewWithLogger(
-		privatRw,
+	privatRw := rates.NewWithLogger(
+		privat.NewClient(a.cfg.ExchangeFallbackServiceBaseURL),
 		a.log.With(slog.String("source", "privatAPI")),
 	)
 
+	rateSvc := rw.NewService(privatRw)
+	rateSvc.SetNext(rateapiRw, exchangeRw)
+
 	ratewatcher.Register(
 		a.srv,
-		wrappedPrivat,
+		rateSvc,
 		a.log.With(slog.String("source", "rateWatcherSrv")),
 	)
 	a.log.Info("Successfully initialized all deps")

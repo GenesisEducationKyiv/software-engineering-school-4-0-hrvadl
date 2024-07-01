@@ -8,6 +8,8 @@ import (
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/models/mail"
 )
 
 const operation = "mailer server"
@@ -24,7 +26,7 @@ func Register(srv *grpc.Server, client Client, log *slog.Logger) {
 
 //go:generate mockgen -destination=./mocks/mock_client.go -package=mocks . Client
 type Client interface {
-	Send(ctx context.Context, m *pb.Mail) error
+	Send(ctx context.Context, m mail.Mail) error
 }
 
 // Server represents mailer GRPC server
@@ -38,7 +40,12 @@ type Server struct {
 
 // Send method calls underlying client method and returns an error, in case there was a
 // failure.
-func (s *Server) Send(ctx context.Context, m *pb.Mail) (*emptypb.Empty, error) {
+func (s *Server) Send(ctx context.Context, in *pb.Mail) (*emptypb.Empty, error) {
+	m := mail.Mail{
+		To:      in.GetTo(),
+		Subject: in.GetSubject(),
+		HTML:    in.GetHtml(),
+	}
 	if err := s.client.Send(ctx, m); err != nil {
 		return nil, fmt.Errorf("%s: failed to send mail: %w", operation, err)
 	}

@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	mailer "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
+	mail "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/models/mail"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,7 +41,7 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // Send mocks base method.
-func (m *MockClient) Send(arg0 context.Context, arg1 *mailer.Mail) error {
+func (m *MockClient) Send(arg0 context.Context, arg1 mail.Mail) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0, arg1)
 	ret0, _ := ret[0].(error)

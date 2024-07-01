@@ -13,6 +13,7 @@ import (
 	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/models/mail"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/grpc/server/mailer/mocks"
 )
 
@@ -52,9 +53,9 @@ func TestServerSend(t *testing.T) {
 				t.Helper()
 				c, ok := client.(*mocks.MockClient)
 				require.True(t, ok, "Failed to cast client to mock client")
-				c.EXPECT().Send(gomock.Any(), &pb.Mail{
+				c.EXPECT().Send(gomock.Any(), mail.Mail{
 					To:      []string{"to@to.com", "to1@to.com"},
-					Html:    "test html",
+					HTML:    "test html",
 					Subject: "test subject",
 				}).Times(1).Return(nil)
 			},
@@ -79,9 +80,9 @@ func TestServerSend(t *testing.T) {
 				t.Helper()
 				c, ok := client.(*mocks.MockClient)
 				require.True(t, ok, "Failed to cast client to mock client")
-				c.EXPECT().Send(gomock.Any(), &pb.Mail{
+				c.EXPECT().Send(gomock.Any(), mail.Mail{
 					To:      []string{"to@to.com", "to1@to.com"},
-					Html:    "test html",
+					HTML:    "test html",
 					Subject: "test subject",
 				}).Times(1).Return(errors.New("failed to send mail"))
 			},

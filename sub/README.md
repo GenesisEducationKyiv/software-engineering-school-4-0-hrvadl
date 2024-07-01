@@ -36,14 +36,19 @@ If you want to run it as a standalone service you need:
 1. Populate env vars needed for it in root `.env` file (../.env)
 2. Run `task run` from `./rw` dir or `task rw:run` from the root of the repo
 
+## App diagram
+
+<img width="930" alt="image" src="https://github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/assets/93580374/eade84a7-314d-479b-a998-91974a59a118">
+
 ## Folder structure
 
 1. `pkg` contains possibly reusable package, not binded to this project. Currently it contains only logger utils
 2. `internal`contains packages binded to this project.
-   2.1. `cfg` contains config which is read from environment vars.
-   2.2. `app` is an abstraction with all services initialization.
-   2.3. `transport` contains all transport layer logic: grpc server and clients.
-   2.4. `service` contains all services with domain logic.
-   2.5. `storage` contains everything related to the persistance layer: connection to db logic & repositories.
-3. `cmd` contains entrypoints to the program.
-4. `migrations` contains db migrations which is run on service start-up.
+
+   - `cfg` contains config which is read from environment vars.
+   - `app` is an abstraction with all services initialization.
+   - `transport` contains all transport layer logic: grpc server and clients.
+   - `service` contains all services with domain logic.
+   - `storage` contains everything related to the persistance layer: connection to db logic & repositories.
+4. `cmd` contains entrypoints to the program.
+5. `migrations` contains db migrations which is run on service start-up.

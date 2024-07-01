@@ -48,7 +48,6 @@ type Converter interface {
 // Note: url should be a base url for  the service, not full url.
 type Client struct {
 	token string
-	next  Converter
 	url   string
 }
 
@@ -57,25 +56,10 @@ type Client struct {
 // getRate() function.
 func (c *Client) Convert(ctx context.Context) (float32, error) {
 	res := new(usdUahResponse)
-	err := c.getRate(ctx, res, usd, uah)
-	if err == nil {
-		return res.ConversionRate, nil
-	}
-
-	if c.next == nil {
+	if err := c.getRate(ctx, res, usd, uah); err != nil {
 		return 0, fmt.Errorf("%s: %w", operation, err)
 	}
-
-	chainedRes, chainedErr := c.next.Convert(ctx)
-	if chainedErr != nil {
-		return 0, fmt.Errorf("%w: %w", err, chainedErr)
-	}
-
-	return chainedRes, nil
-}
-
-func (c *Client) SetNext(next Converter) {
-	c.next = next
+	return res.ConversionRate, nil
 }
 
 // getRate method is used to query how much **from** currency is worth
