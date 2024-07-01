@@ -2,12 +2,13 @@ package mailer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"time"
 
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/models/mail"
 )
@@ -47,14 +48,20 @@ func (s *Server) Subscribe() error {
 
 func (s *Server) subscribe(msg *nats.Msg) {
 	s.log.Info("Got message from NATS", slog.Any("msg", msg))
-	var mail mail.Mail
-	if err := json.Unmarshal(msg.Data, &mail); err != nil {
+	var in pb.Mail
+	if err := proto.Unmarshal(msg.Data, &in); err != nil {
 		s.log.Error("Failed to parse mail", slog.Any("err", err))
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
+
+	mail := mail.Mail{
+		HTML:    in.GetHtml(),
+		To:      in.GetTo(),
+		Subject: in.GetSubject(),
+	}
 
 	if err := s.sender.Send(ctx, mail); err != nil {
 		s.log.Error("Failed to send mail", slog.Any("err", err))

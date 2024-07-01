@@ -2,8 +2,10 @@ package mailer
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
+
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
+	"google.golang.org/protobuf/proto"
 )
 
 const subject = "mail"
@@ -24,15 +26,9 @@ type Client struct {
 	pub Publisher
 }
 
-type Mail struct {
-	HTML    string   `json:"html"`
-	Subject string   `json:"subject"`
-	To      []string `json:"to"`
-}
-
 func (c *Client) Send(ctx context.Context, html, subject string, to ...string) error {
-	done := c.send(Mail{
-		HTML:    html,
+	done := c.send(&pb.Mail{
+		Html:    html,
 		Subject: subject,
 		To:      to,
 	})
@@ -45,11 +41,11 @@ func (c *Client) Send(ctx context.Context, html, subject string, to ...string) e
 	}
 }
 
-func (c *Client) send(m Mail) <-chan error {
+func (c *Client) send(m *pb.Mail) <-chan error {
 	ch := make(chan error)
 
 	go func() {
-		bytes, err := json.Marshal(m)
+		bytes, err := proto.Marshal(m)
 		if err != nil {
 			ch <- err
 			return

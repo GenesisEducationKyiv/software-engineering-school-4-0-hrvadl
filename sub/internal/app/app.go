@@ -32,8 +32,8 @@ import (
 const operation = "app init"
 
 const (
-	cronJobHour    = 14
-	cronJobMinute  = 47
+	cronJobHour    = 12
+	cronJobMinute  = 0o0
 	cronJobTimeout = time.Minute * 1
 )
 
