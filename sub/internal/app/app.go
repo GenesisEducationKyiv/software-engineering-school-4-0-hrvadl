@@ -18,7 +18,6 @@ import (
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/cfg"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/cron"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/queue"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/sender"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/sender/formatter"
 	subs "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/sub"
@@ -102,7 +101,7 @@ func (a *App) Run() error {
 	}
 
 	m := mailer.NewClient(
-		queue.NewAdapter(a.nats, sendTimeout),
+		mailer.NewAdapter(a.nats, sendTimeout),
 		a.log.With(slog.String("source", "mailer")),
 	)
 
