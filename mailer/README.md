@@ -38,7 +38,8 @@ If you want to run it as a standalone service you need:
 
 ## App diagram
 
-<img width="787" alt="image" src="https://github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/assets/93580374/d1adbe07-eba8-4828-ab3e-2f4f5882edee">
+<img width="801" alt="image" src="https://github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/assets/93580374/7ca51434-6905-4d61-89d3-6b2ee3078a20">
+
 
 ## Folder structure
 
