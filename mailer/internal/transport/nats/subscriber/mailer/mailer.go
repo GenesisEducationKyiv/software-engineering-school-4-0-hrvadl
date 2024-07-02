@@ -65,5 +65,10 @@ func (s *Server) subscribe(msg *nats.Msg) {
 
 	if err := s.sender.Send(ctx, mail); err != nil {
 		s.log.Error("Failed to send mail", slog.Any("err", err))
+		return
+	}
+
+	if err := msg.Ack(); err != nil {
+		s.log.Error("Failed to send ack", slog.Any("err", err))
 	}
 }
