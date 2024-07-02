@@ -21,6 +21,7 @@ func NewClient(pub Publisher, log *slog.Logger) *Client {
 	}
 }
 
+//go:generate mockgen -destination=./mocks/mock_publisher.go -package=mocks . Publisher
 type Publisher interface {
 	Publish(name string, data []byte) error
 }
