@@ -4,11 +4,15 @@ import (
 	"context"
 	"log/slog"
 
-	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v2/mailer"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 )
 
-const subject = "mail"
+const (
+	subject = "mail"
+	event   = "sendDailySubMail"
+)
 
 func NewClient(pub Publisher, log *slog.Logger) *Client {
 	return &Client{
@@ -27,10 +31,14 @@ type Client struct {
 }
 
 func (c *Client) Send(ctx context.Context, html, subject string, to ...string) error {
-	done := c.send(&pb.Mail{
-		Html:    html,
-		Subject: subject,
-		To:      to,
+	done := c.send(&pb.MailEvent{
+		EventID:   uuid.New().String(),
+		EventType: event,
+		Data: &pb.Mail{
+			Html:    html,
+			Subject: subject,
+			To:      to,
+		},
 	})
 
 	select {
@@ -41,7 +49,7 @@ func (c *Client) Send(ctx context.Context, html, subject string, to ...string) e
 	}
 }
 
-func (c *Client) send(m *pb.Mail) <-chan error {
+func (c *Client) send(m *pb.MailEvent) <-chan error {
 	ch := make(chan error)
 
 	go func() {

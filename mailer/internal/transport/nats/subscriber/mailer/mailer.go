@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v2/mailer"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 
@@ -47,28 +47,44 @@ func (s *Server) Subscribe() error {
 }
 
 func (s *Server) subscribe(msg *nats.Msg) {
-	s.log.Info("Got message from NATS", slog.Any("msg", msg))
-	var in pb.Mail
+	var in pb.MailEvent
 	if err := proto.Unmarshal(msg.Data, &in); err != nil {
 		s.log.Error("Failed to parse mail", slog.Any("err", err))
 		return
 	}
 
+	s.log.Info(
+		"Got message from NATS",
+		slog.String("id", in.GetEventID()),
+		slog.String("type", in.GetEventType()),
+	)
+
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
+	data := in.GetData()
 
 	mail := mail.Mail{
-		HTML:    in.GetHtml(),
-		To:      in.GetTo(),
-		Subject: in.GetSubject(),
+		HTML:    data.GetHtml(),
+		To:      data.GetTo(),
+		Subject: data.GetSubject(),
 	}
 
 	if err := s.sender.Send(ctx, mail); err != nil {
-		s.log.Error("Failed to send mail", slog.Any("err", err))
+		s.nack(msg)
 		return
 	}
 
+	s.ack(msg)
+}
+
+func (s *Server) ack(msg *nats.Msg) {
 	if err := msg.Ack(); err != nil {
+		s.log.Error("Failed to send ack", slog.Any("err", err))
+	}
+}
+
+func (s *Server) nack(msg *nats.Msg) {
+	if err := msg.Nak(); err != nil {
 		s.log.Error("Failed to send ack", slog.Any("err", err))
 	}
 }
