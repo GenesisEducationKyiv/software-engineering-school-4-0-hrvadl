@@ -76,8 +76,7 @@ func (a *App) Run() error {
 	mailSvc.SetNext(resend)
 
 	var err error
-	a.nats, err = nats.Connect(a.cfg.NatsURL)
-	if err != nil {
+	if a.nats, err = nats.Connect(a.cfg.NatsURL); err != nil {
 		return fmt.Errorf("%s: failed to connect to nats: %w", operation, err)
 	}
 

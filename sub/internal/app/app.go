@@ -95,8 +95,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to rate watcher: %w", operation, err)
 	}
 
-	a.nats, err = nats.Connect(a.cfg.NatsURL)
-	if err != nil {
+	if a.nats, err = nats.Connect(a.cfg.NatsURL); err != nil {
 		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
 	}
 
