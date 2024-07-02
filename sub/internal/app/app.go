@@ -18,6 +18,7 @@ import (
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/cfg"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/cron"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/queue"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/sender"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/sender/formatter"
 	subs "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/sub"
@@ -26,7 +27,7 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/clients/ratewatcher"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/server/sub"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/nats/client/mailer"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/queue/publisher/mailer"
 )
 
 const operation = "app init"
@@ -35,6 +36,7 @@ const (
 	cronJobHour    = 12
 	cronJobMinute  = 0o0
 	cronJobTimeout = time.Minute * 1
+	sendTimeout    = time.Second * 5
 )
 
 // New constructs new App with provided arguments.
@@ -99,7 +101,11 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
 	}
 
-	m := mailer.NewClient(a.nats, a.log.With(slog.String("source", "mailer")))
+	m := mailer.NewClient(
+		queue.NewAdapter(a.nats, sendTimeout),
+		a.log.With(slog.String("source", "mailer")),
+	)
+
 	mailSender := sender.New(
 		m,
 		sg,
