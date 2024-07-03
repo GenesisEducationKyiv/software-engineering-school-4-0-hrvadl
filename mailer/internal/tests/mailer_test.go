@@ -4,6 +4,7 @@ package tests
 
 import (
 	"log/slog"
+	"net"
 	"os"
 	"strconv"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/mailpit"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v2/mailer"
 	"github.com/nats-io/nats.go"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
@@ -89,14 +91,19 @@ func TestAppRun(t *testing.T) {
 		},
 	}
 
+	const (
+		testHost = "localhost"
+		testPort = "33300"
+	)
+
 	cfg := cfg.Config{
 		MailerFrom:     mustGetEnv(t, mailerSMTPFromEnvKey),
 		MailerHost:     mustGetEnv(t, mailerSMTPHostEnvKey),
 		MailerPassword: mustGetEnv(t, mailerSMTPPortEnvKey),
 		NatsURL:        mustGetEnv(t, mailerTestNatsURL),
 		MailerPort:     mustGetIntEnv(t, mailerSMTPPortEnvKey),
-		Port:           "33300",
-		Host:           "localhost",
+		Port:           testPort,
+		Host:           testHost,
 	}
 
 	mp := mailpit.NewClient(cfg.MailerHost, mustGetIntEnv(t, mailerTestAPIPortEnvKey), time.Second)
@@ -105,7 +112,10 @@ func TestAppRun(t *testing.T) {
 
 	app := app.New(cfg, slog.Default())
 	go app.MustRun()
-	time.Sleep(time.Second)
+	require.EventuallyWithT(t, func(*assert.CollectT) {
+		checkPortBusy(t, testHost, testPort)
+	}, time.Second, 100*time.Millisecond)
+
 	t.Cleanup(func() {
 		app.Stop()
 	})
@@ -121,19 +131,20 @@ func TestAppRun(t *testing.T) {
 			_, err = nc.Request(tt.args.subject, bytes, time.Second)
 			require.NoError(t, err)
 
-			time.Sleep(time.Second)
-			data := tt.args.command.GetData()
-			messages, err := mp.GetAll()
-			require.NoError(t, err)
-			if tt.wantErr {
-				require.Len(t, messages, 0)
-				return
-			}
+			require.EventuallyWithT(t, func(*assert.CollectT) {
+				data := tt.args.command.GetData()
+				messages, err := mp.GetAll()
+				require.NoError(t, err)
+				if tt.wantErr {
+					require.Empty(t, messages, 0)
+					return
+				}
 
-			require.Len(t, messages, 1)
-			m := messages[0]
-			require.Equal(t, data.GetSubject(), m.Subject)
-			require.Equal(t, data.GetTo(), getToMails(m.Bcc))
+				require.Len(t, messages, 1)
+				m := messages[0]
+				require.Equal(t, data.GetSubject(), m.Subject)
+				require.Equal(t, data.GetTo(), getToMails(m.Bcc))
+			}, time.Second, 100*time.Millisecond)
 		})
 	}
 }
@@ -158,4 +169,13 @@ func getToMails(to []mailpit.Receipient) []string {
 		mails = append(mails, t.Address)
 	}
 	return mails
+}
+
+func checkPortBusy(t *testing.T, host string, port string) {
+	t.Helper()
+	timeout := time.Second
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), timeout)
+	require.NoError(t, err)
+	require.NotEmpty(t, conn)
+	require.NoError(t, conn.Close())
 }
