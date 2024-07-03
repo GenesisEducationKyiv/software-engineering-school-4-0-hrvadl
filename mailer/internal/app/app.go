@@ -92,7 +92,7 @@ func (a *App) Run() error {
 		healthgrpc.HealthCheckResponse_SERVING,
 	)
 
-	listener, err := net.Listen("tcp", net.JoinHostPort("", a.cfg.Port))
+	listener, err := net.Listen("tcp", net.JoinHostPort(a.cfg.Host, a.cfg.Port))
 	if err != nil {
 		return fmt.Errorf("%s: failed to listen on port %s: %w", operation, a.cfg.Port, err)
 	}
@@ -108,6 +108,10 @@ func (a *App) GracefulStop() {
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT)
 	signal := <-ch
 	a.log.Info("Received stop signal. Terminating...", slog.Any("signal", signal))
+	a.Stop()
+}
+
+func (a *App) Stop() {
 	a.srv.Stop()
 	a.nats.Close()
 	a.log.Info("Successfully terminated server. Bye!")

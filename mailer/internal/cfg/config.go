@@ -19,6 +19,7 @@ type Config struct {
 	MailerPort          int    `env:"MAILER_SMTP_PORT,required,notEmpty"`
 	LogLevel            string `env:"MAILER_LOG_LEVEL,required,notEmpty"`
 	Port                string `env:"MAILER_PORT,required,notEmpty"`
+	Host                string `env:"MAILER_HOST"`
 	NatsURL             string `env:"NATS_URL,required,notEmpty"`
 }
 

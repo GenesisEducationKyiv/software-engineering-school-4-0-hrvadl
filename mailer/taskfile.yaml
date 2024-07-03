@@ -83,7 +83,8 @@ tasks:
         - MAILER_TEST_SMTP_HOST
         - MAILER_TEST_SMTP_PORT
         - MAILER_TEST_API_PORT
-        - NATS_TEST_PORT
+        - MAILER_NATS_TEST_PORT
+        - MAILER_NATS_TEST_URL
     deps:
       - task: run:mailpit
         vars:
@@ -93,13 +94,14 @@ tasks:
       - task: run:nats
         vars:
           CONTAINER_NAME: "{{ .NATS_CONTAINER_NAME }}"
-          PORT: "{{ .NATS_TEST_PORT }}"
+          PORT: "{{ .MAILER_NATS_TEST_PORT }}"
       - task: healthcheck:mailpit
         vars:
           CONTAINER_NAME: "{{ .SMTP_CONTAINER_NAME }}"
       - task: healthcheck:nats
         vars:
           CONTAINER_NAME: "{{ .NATS_CONTAINER_NAME }}"
+          NATS_TEST_PORT: "{{ .MAILER_NATS_TEST_PORT }}"
     cmds:
       - defer: docker stop {{ .SMTP_CONTAINER_NAME }} && docker rm {{ .SMTP_CONTAINER_NAME }}
       - defer: docker stop {{ .NATS_CONTAINER_NAME }} && docker rm {{ .NATS_CONTAINER_NAME }}
@@ -128,7 +130,7 @@ tasks:
           sleep 3
           echo "NATS is not healthy..."
         done
-        echo "NATS not healthy!"
+        echo "NATS is healthy!"
 
   run:mailpit:
     requires:
@@ -149,7 +151,7 @@ tasks:
         function check_health() {
           docker exec -t {{ .CONTAINER_NAME }} wget --server-response http://localhost:8025/readyz 2>&1 \
           | awk '/^  HTTP/{print $2}' \
-          | grep 200 || exit_code=1
+          | grep 200 
         }
 
         while [ "check_health" -gt 0 ]; do
