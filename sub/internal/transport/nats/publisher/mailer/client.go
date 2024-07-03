@@ -32,7 +32,7 @@ type Client struct {
 }
 
 func (c *Client) Send(ctx context.Context, html, subject string, to ...string) error {
-	done := c.send(&pb.MailEvent{
+	done := c.send(&pb.MailCommand{
 		EventID:   uuid.New().String(),
 		EventType: event,
 		Data: &pb.Mail{
@@ -50,7 +50,7 @@ func (c *Client) Send(ctx context.Context, html, subject string, to ...string) e
 	}
 }
 
-func (c *Client) send(m *pb.MailEvent) <-chan error {
+func (c *Client) send(m *pb.MailCommand) <-chan error {
 	ch := make(chan error)
 
 	go func() {

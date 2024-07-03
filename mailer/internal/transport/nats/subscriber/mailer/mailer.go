@@ -47,7 +47,7 @@ func (s *Server) Subscribe() error {
 }
 
 func (s *Server) subscribe(msg *nats.Msg) {
-	var in pb.MailEvent
+	var in pb.MailCommand
 	if err := proto.Unmarshal(msg.Data, &in); err != nil {
 		s.log.Error("Failed to parse mail", slog.Any("err", err))
 		return
