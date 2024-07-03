@@ -74,7 +74,8 @@ tasks:
 
   test:integration-with-env:
     vars:
-      CONTAINER_NAME: "mailpit"
+      SMTP_CONTAINER_NAME: "mailpit"
+      NATS_CONTAINER_NAME: "nats-test"
     requires:
       vars:
         - MAILER_TEST_SMTP_PASSWORD
@@ -82,32 +83,80 @@ tasks:
         - MAILER_TEST_SMTP_HOST
         - MAILER_TEST_SMTP_PORT
         - MAILER_TEST_API_PORT
-    cmds:
-      - docker run -d --name {{ .CONTAINER_NAME }} -p {{ .MAILER_TEST_SMTP_PORT }}:1025 -p {{ .MAILER_TEST_API_PORT }}:8025 axllent/mailpit
-      - defer: docker stop {{ .CONTAINER_NAME }} && docker rm {{ .CONTAINER_NAME }}
+        - NATS_TEST_PORT
+    deps:
+      - task: run:mailpit
+        vars:
+          CONTAINER_NAME: "{{ .SMTP_CONTAINER_NAME }}"
+          SMTP_PORT: "{{ .MAILER_TEST_SMTP_PORT }}"
+          API_PORT: "{{ .MAILER_TEST_API_PORT }}"
+      - task: run:nats
+        vars:
+          CONTAINER_NAME: "{{ .NATS_CONTAINER_NAME }}"
+          PORT: "{{ .NATS_TEST_PORT }}"
       - task: healthcheck:mailpit
         vars:
-          CONTAINER_NAME: "{{ .CONTAINER_NAME }}"
+          CONTAINER_NAME: "{{ .SMTP_CONTAINER_NAME }}"
+      - task: healthcheck:nats
+        vars:
+          CONTAINER_NAME: "{{ .NATS_CONTAINER_NAME }}"
+    cmds:
+      - defer: docker stop {{ .SMTP_CONTAINER_NAME }} && docker rm {{ .SMTP_CONTAINER_NAME }}
+      - defer: docker stop {{ .NATS_CONTAINER_NAME }} && docker rm {{ .NATS_CONTAINER_NAME }}
       - go test -tags=integration ./... {{ .CLI_ARGS }}
+
+  run:nats:
+    requires:
+      vars:
+        - CONTAINER_NAME
+        - PORT
+    cmds:
+      - docker run -d --name {{ .CONTAINER_NAME }} -p {{ .PORT }}:4222 nats-streaming
+
+  healthcheck:nats:
+    requires:
+      vars:
+        - NATS_TEST_PORT
+        - CONTAINER_NAME
+    cmds:
+      - |
+        function check_health() {
+          docker exec -t {{ .CONTAINER_NAME }} wget http://localhost:8222/healthz -q -S -O -
+        }
+
+        while [ "$check_health" -gt 0 ]; do
+          sleep 3
+          echo "NATS is not healthy..."
+        done
+        echo "NATS not healthy!"
+
+  run:mailpit:
+    requires:
+      vars:
+        - CONTAINER_NAME
+        - SMTP_PORT
+        - API_PORT
+    cmds:
+      - docker run -d --name {{ .CONTAINER_NAME }} -p {{ .SMTP_PORT }}:1025 -p {{ .API_PORT }}:8025 axllent/mailpit
 
   healthcheck:mailpit:
     requires:
       vars:
         - MAILER_TEST_API_PORT
+        - CONTAINER_NAME
     cmds:
       - |
-        exit_code=0
-        docker exec -t {{ .CONTAINER_NAME }} wget --server-response http://localhost:8025/readyz 2>&1 \
-        | awk '/^  HTTP/{print $2}' \
-        | grep 200 || exit_code=1
-        while [ "$exit_code" -gt 0 ]; do
+        function check_health() {
+          docker exec -t {{ .CONTAINER_NAME }} wget --server-response http://localhost:8025/readyz 2>&1 \
+          | awk '/^  HTTP/{print $2}' \
+          | grep 200 || exit_code=1
+        }
+
+        while [ "check_health" -gt 0 ]; do
             sleep 3
-            exit_code=0
-            docker exec -t {{ .CONTAINER_NAME }} wget --server-response http://localhost:8025/readyz 2>&1 \
-            | awk '/^  HTTP/{print $2}' \
-            | grep 200 || exit_code=1
+            echo "SMTP is not healthy..."
         done
-        exit_code=0
+        echo "SMTP is healthy!"
 
   generate:
     desc: "Generate (used for mock generation)"
