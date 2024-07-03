@@ -5,11 +5,7 @@ import "google/protobuf/empty.proto";
 
 option go_package = "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/v2/mailer";
 
-service MailerService {
-  rpc Send(MailEvent) returns (google.protobuf.Empty);
-}
-
-message MailEvent {
+message MailCommand {
   string eventID = 1;
   string eventType = 2;
   Mail data = 3;
