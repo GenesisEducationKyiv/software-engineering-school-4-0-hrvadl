@@ -3,6 +3,7 @@ package subscriber
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -27,7 +28,9 @@ func (r *Repository) GetAll(ctx context.Context) ([]Subscriber, error) {
 }
 
 func (r *Repository) Save(ctx context.Context, sub Subscriber) error {
+	slog.Info("Saving subscriber", slog.Any("sub", sub))
 	if _, err := r.db.Collection(collection).InsertOne(ctx, sub); err != nil {
+		slog.Error("Failed to save sub", slog.Any("err", err))
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 	return nil

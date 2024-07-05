@@ -118,7 +118,7 @@ func (a *App) Run() error {
 
 	adp := cron.NewAdapter(rateRepo, subscriberRepo, mailSvc, time.Second*5)
 
-	job := runner.NewDailyJob(12, 0, a.log)
+	job := runner.NewDailyJob(19, 23, a.log)
 	job.Do(adp)
 
 	return nil

@@ -103,9 +103,9 @@ func (s *Subscriber) subscribe(msg jetstream.Msg) {
 
 	var err error
 	if in.Deleted {
-		err = s.commander.Save(ctx, sub)
-	} else {
 		err = s.commander.Delete(ctx, sub)
+	} else {
+		err = s.commander.Save(ctx, sub)
 	}
 
 	if err != nil {
