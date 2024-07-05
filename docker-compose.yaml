@@ -10,6 +10,7 @@ services:
     depends_on:
       - sub
       - rw
+      - mailer
     env_file:
       - .env
     networks:
@@ -54,7 +55,7 @@ services:
       nats:
         condition: service_healthy
       debezium:
-        condition: service_started
+        condition: service_healthy
     env_file:
       - .env
     networks:
