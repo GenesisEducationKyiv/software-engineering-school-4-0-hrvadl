@@ -1,4 +1,0 @@
-# Trying to not persist bin logs to volume
-FROM mysql:8.0-debian
-RUN mkdir /var/log/mysql && \
-chown -R mysql:mysql /var/log/mysql

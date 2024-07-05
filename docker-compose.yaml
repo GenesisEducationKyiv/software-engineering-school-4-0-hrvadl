@@ -61,10 +61,7 @@ services:
       - converter
 
   db:
-    image: mysql-converter
-    build:
-      context: infra
-      dockerfile: ./Dockerfile.mysql
+    image: mysql:8.0-debian
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       start_period: 5s
@@ -72,7 +69,7 @@ services:
       timeout: 3s
       retries: 30
     command:
-      - --log-bin=/var/log/mysql/mysql-bin
+      - --log-bin=binlog
       - --binlog-format=ROW
       - --server-id=1
       - --binlog-do-db=${MYSQL_DATABASE}
