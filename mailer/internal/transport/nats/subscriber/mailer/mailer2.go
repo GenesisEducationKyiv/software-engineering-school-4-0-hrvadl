@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	subjectSub = "new-sub.converter.subscribers"
-	stream     = "DebeziumStream"
+	subjectSub    = "subscribers-changed"
+	stream        = "DebeziumStream"
+	consumer      = "sub-consumer"
+	streamTimeout = time.Second * 30
 )
 
 func NewSub(js jetstream.JetStream, log *slog.Logger) *ServerSub {
@@ -27,7 +29,7 @@ type ServerSub struct {
 }
 
 func (s *ServerSub) Subscribe() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), streamTimeout)
 	defer cancel()
 
 	stream, err := s.stream.Stream(ctx, stream)
@@ -36,7 +38,7 @@ func (s *ServerSub) Subscribe() error {
 	}
 
 	cons, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Name:          "SubConsumer",
+		Name:          consumer,
 		AckPolicy:     jetstream.AckExplicitPolicy,
 		DeliverPolicy: jetstream.DeliverNewPolicy,
 		FilterSubject: subjectSub,
