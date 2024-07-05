@@ -4,3 +4,11 @@ package mailer.v3;
 import "google/protobuf/empty.proto";
 
 option go_package = "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/v3/mailer";
+
+message ExchangeFetchedEvent {
+  string EventID = 1;
+  string EventType = 2;
+  string From = 3;
+  string To = 4;
+  float Rate = 5;
+}
