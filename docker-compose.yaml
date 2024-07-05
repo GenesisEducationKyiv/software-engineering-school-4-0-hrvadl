@@ -53,19 +53,29 @@ services:
     depends_on:
       nats:
         condition: service_healthy
+      debezium:
+        condition: service_started
     env_file:
       - .env
     networks:
       - converter
 
   db:
-    image: mysql
+    image: mysql-converter
+    build:
+      context: infra
+      dockerfile: ./Dockerfile.mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       start_period: 5s
       interval: 3s
       timeout: 3s
       retries: 30
+    command:
+      - --log-bin=/var/log/mysql/mysql-bin
+      - --binlog-format=ROW
+      - --server-id=1
+      - --binlog-do-db=${MYSQL_DATABASE}
     env_file:
       - .env
     volumes:
@@ -143,8 +153,26 @@ services:
       interval: 14s
     ports:
       - 4222:4222
-      - 6222:6222
       - 8222:8222
+    command:
+      - "--debug"
+      - "--http_port=8222"
+      - "--jetstream"
+    networks:
+      - converter
+
+  debezium:
+    image: docker.io/debezium/server:latest
+    volumes:
+      - ./infra/debezium/:/debezium/conf
+    healthcheck:
+      test: curl --silent http://localhost:8080/q/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - migrate
+      - nats
     networks:
       - converter
 
