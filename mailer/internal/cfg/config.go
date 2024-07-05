@@ -21,6 +21,7 @@ type Config struct {
 	Port                string `env:"MAILER_PORT,required,notEmpty"`
 	Host                string `env:"MAILER_HOST"`
 	NatsURL             string `env:"NATS_URL,required,notEmpty"`
+	MongoURL            string `env:"MONGO_URL,required,notEmpty"`
 }
 
 // Must is a handly wrapper around return results from

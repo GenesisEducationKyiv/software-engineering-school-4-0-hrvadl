@@ -56,6 +56,8 @@ services:
         condition: service_healthy
       debezium:
         condition: service_healthy
+      mongo:
+        condition: service_started
     env_file:
       - .env
     networks:
@@ -171,6 +173,14 @@ services:
     depends_on:
       - migrate
       - nats
+    networks:
+      - converter
+
+  mongo:
+    image: mongo:4.4.6
+    restart: always
+    env_file:
+      - .env
     networks:
       - converter
 

@@ -10,7 +10,7 @@ import (
 
 const (
 	operation = "rate exchange"
-	subject   = "NewExchangeRateFetched"
+	subject   = "rate-fetched"
 )
 
 func NewClient(nats *nats.Conn, converter RateSource, log *slog.Logger) *Client {
