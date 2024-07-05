@@ -12,6 +12,7 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
@@ -78,6 +79,15 @@ func (a *App) Run() error {
 	var err error
 	if a.nats, err = nats.Connect(a.cfg.NatsURL); err != nil {
 		return fmt.Errorf("%s: failed to connect to nats: %w", operation, err)
+	}
+
+	js, err := jetstream.New(a.nats)
+	if err != nil {
+		return fmt.Errorf("%s: failed to connect to jetstream: %w", operation, err)
+	}
+
+	if err = mailer.NewSub(js, a.log).Subscribe(); err != nil {
+		return fmt.Errorf("%s: failed to sub to deb: %w", operation, err)
 	}
 
 	m := mailer.New(a.nats, mailSvc, a.log.With(slog.String("source", "mailerSrv")), mailerTimeout)

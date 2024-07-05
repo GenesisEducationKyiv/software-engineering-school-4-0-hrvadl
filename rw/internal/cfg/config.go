@@ -11,12 +11,13 @@ const operation = "config parsing"
 // Config struct represents application config,
 // which is used application-wide.
 type Config struct {
-	ExchangeServiceBaseURL               string `env:"API_BASE_URL,required,notEmpty"`
-	ExchangeFallbackServiceBaseURL       string `env:"API_FALLBACK_BASE_URL,required,notEmpty"`
-	ExchangeFallbackSecondServiceBaseURL string `env:"API_FALLBACK2_BASE_URL,required,notEmpty"`
-	ExchangeFallbackSecondServiceToken   string `env:"API_FALLBACK2_TOKEN,required,notEmpty"`
-	LogLevel                             string `env:"LOG_LEVEL,required,notEmpty"`
-	Port                                 string `env:"PORT,required,notEmpty"`
+	ExchangeServiceBaseURL               string `env:"EXCHANGE_API_BASE_URL,required,notEmpty"`
+	ExchangeFallbackServiceBaseURL       string `env:"EXCHANGE_API_FALLBACK_BASE_URL,required,notEmpty"`
+	ExchangeFallbackSecondServiceBaseURL string `env:"EXCHANGE_API_FALLBACK2_BASE_URL,required,notEmpty"`
+	ExchangeFallbackSecondServiceToken   string `env:"EXCHANGE_API_FALLBACK2_TOKEN,required,notEmpty"`
+	LogLevel                             string `env:"EXCHANGE_LOG_LEVEL,required,notEmpty"`
+	Port                                 string `env:"EXCHANGE_PORT,required,notEmpty"`
+	NatsURL                              string `env:"NATS_URL,required,notEmpty"`
 }
 
 // Must is a handly wrapper around return results from
@@ -35,7 +36,7 @@ func Must(cfg *Config, err error) *Config {
 // is missing or contains invalid value.
 func NewFromEnv() (*Config, error) {
 	var cfg Config
-	if err := env.ParseWithOptions(&cfg, env.Options{Prefix: "EXCHANGE_"}); err != nil {
+	if err := env.Parse(&cfg); err != nil {
 		return nil, fmt.Errorf("%s failed: %w", operation, err)
 	}
 	return &cfg, nil

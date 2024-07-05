@@ -1,0 +1,6 @@
+syntax = "proto3";
+package mailer.v3;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/v3/mailer";

@@ -7,9 +7,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/cron"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/ratewatcher"
+	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
@@ -20,10 +23,25 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates/privat"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/platform/rates/rateapi"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/service/rw"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/transport/grpc/server/ratewatcher"
+	rwGRPCSrv "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/transport/grpc/server/ratewatcher"
+	rwnats "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/transport/nats/publisher/ratewatcher"
 )
 
-const operation = "app init"
+// TODO:
+// move cron to pkg: done
+// DEFINE PROTO SCHEMA FOR MESSAGES!!
+// add cron job to rate watcher: done
+// send events from sub
+// receive events in mailer
+// add persistence layer to mailer
+// add cron job to mailer
+// add outbox
+
+const (
+	operation       = "app init"
+	publishTimeout  = time.Second * 5
+	publishInterval = time.Minute * 5
+)
 
 // New constructs new App with provided arguments.
 // NOTE: than neither cfg or log can't be nil or App will panic.
@@ -38,9 +56,10 @@ func New(cfg cfg.Config, log *slog.Logger) *App {
 // db connections, and GRPC server/clients. Could return an error if any
 // of described above steps failed.
 type App struct {
-	cfg cfg.Config
-	log *slog.Logger
-	srv *grpc.Server
+	cfg  cfg.Config
+	log  *slog.Logger
+	srv  *grpc.Server
+	nats *nats.Conn
 }
 
 // MustRun is a wrapper around App.Run() function which could be handly
@@ -82,12 +101,25 @@ func (a *App) Run() error {
 	rateSvc := rw.NewService(privatRw)
 	rateSvc.SetNext(rateapiRw, exchangeRw)
 
-	ratewatcher.Register(
+	rwGRPCSrv.Register(
 		a.srv,
 		rateSvc,
 		a.log.With(slog.String("source", "rateWatcherSrv")),
 	)
 	a.log.Info("Successfully initialized all deps")
+
+	var err error
+	if a.nats, err = nats.Connect(a.cfg.NatsURL); err != nil {
+		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
+	}
+
+	rwNatsPublisher := rwnats.NewCronJobAdapter(
+		rwnats.NewClient(a.nats, rateSvc, a.log.With(slog.String("source", "rateWatchNats"))),
+		publishTimeout,
+	)
+
+	job := cron.NewJob(publishInterval, a.log.With(slog.String("source", "rateWatchCron")))
+	job.Do(rwNatsPublisher)
 
 	healthcheck := health.NewServer()
 	healthgrpc.RegisterHealthServer(a.srv, healthcheck)
@@ -113,5 +145,6 @@ func (a *App) GracefulStop() {
 	signal := <-ch
 	a.log.Info("Received stop signal. Terminating...", slog.Any("signal", signal))
 	a.srv.Stop()
+	a.nats.Close()
 	a.log.Info("Successfully terminated server. Bye!")
 }
