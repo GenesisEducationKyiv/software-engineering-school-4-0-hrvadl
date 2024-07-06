@@ -18,9 +18,11 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/resend"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/cron"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/mail"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/rate"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/subscriber"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/platform/db"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/rate"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/subscriber"
+	raterepo "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/rate"
+	subrepo "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/subscriber"
 	rateSub "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/nats/subscriber/rate"
 	subSub "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/nats/subscriber/sub"
 )
@@ -29,7 +31,7 @@ const operation = "app init"
 
 const (
 	sendHours   = 8
-	sendMinutes = 20
+	sendMinutes = 45
 )
 
 const (
@@ -80,8 +82,10 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to mongo: %w", operation, err)
 	}
 
-	subscriberRepo := subscriber.NewRepo(a.db.GetDB())
-	rateRepo := rate.NewRepo(a.db.GetDB())
+	subscriberRepo := subrepo.NewRepo(a.db.GetDB())
+	subSvc := subscriber.NewService(subscriberRepo)
+	rateRepo := raterepo.NewRepo(a.db.GetDB())
+	rateSvc := rate.NewService(rateRepo)
 
 	resend := resend.NewClient(a.cfg.MailerFromFallback, a.cfg.MailerFallbackToken)
 	gomail := gomail.NewClient(
@@ -103,14 +107,14 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to jetstream: %w", operation, err)
 	}
 
-	subSubscriber := subSub.NewSubscriber(js, subscriberRepo, a.log, subTimeout)
+	subSubscriber := subSub.NewSubscriber(js, subSvc, a.log, subTimeout)
 	if err = subSubscriber.Subscribe(); err != nil {
 		return fmt.Errorf("%s: failed to sub to CDC: %w", operation, err)
 	}
 
 	m := rateSub.NewSubscriber(
 		a.nats,
-		rateRepo,
+		rateSvc,
 		a.log.With(slog.String("source", "mailerSrv")),
 		mailerTimeout,
 	)
@@ -118,7 +122,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to subscribe: %w", operation, err)
 	}
 
-	adp := cron.NewAdapter(rateRepo, subscriberRepo, mailSvc, cronTimeout, a.log)
+	adp := cron.NewAdapter(rateSvc, subSvc, mailSvc, cronTimeout, a.log)
 	job := runner.NewDailyJob(sendHours, sendMinutes, a.log)
 	job.Do(adp)
 
