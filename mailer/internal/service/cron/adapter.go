@@ -21,12 +21,14 @@ func NewAdapter(
 	sg SubscribersGetter,
 	s Sender,
 	timeout time.Duration,
+	log *slog.Logger,
 ) *Adapter {
 	return &Adapter{
 		rate:        rg,
 		subscribers: sg,
 		sender:      s,
 		timeout:     timeout,
+		log:         log,
 	}
 }
 

@@ -7,6 +7,8 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/platform/db"
 )
 
 const (
@@ -26,11 +28,16 @@ type Repository struct {
 
 func (r *Repository) Get(ctx context.Context) (*Exchange, error) {
 	var ex Exchange
-	if err := r.db.Collection(collection).FindOne(ctx, bson.D{}).Decode(&ex); err != nil {
-		return nil, fmt.Errorf("%s: failed to get rate: %w", operation, err)
+	err := r.db.Collection(collection).FindOne(ctx, bson.D{}).Decode(&ex)
+	if err == nil {
+		return &ex, nil
 	}
 
-	return &ex, nil
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, fmt.Errorf("%s: %w: %w", operation, db.ErrNotFound, err)
+	}
+
+	return nil, fmt.Errorf("%s: failed to get rate: %w", operation, err)
 }
 
 func (r *Repository) Replace(ctx context.Context, rate Exchange) error {

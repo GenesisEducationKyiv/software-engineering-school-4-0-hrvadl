@@ -2,10 +2,13 @@ package subscriber
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/platform/db"
 )
 
 const (
@@ -30,11 +33,16 @@ func (r *Repository) GetAll(ctx context.Context) ([]Subscriber, error) {
 	}
 
 	var sub []Subscriber
-	if err := cur.All(ctx, &sub); err != nil {
-		return nil, fmt.Errorf("%s: failed to decode subs: %w", operation, err)
+	err = cur.All(ctx, &sub)
+	if err == nil {
+		return sub, nil
 	}
 
-	return sub, nil
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, fmt.Errorf("%s: %w: %w", operation, db.ErrNotFound, err)
+	}
+
+	return nil, fmt.Errorf("%s: failed to decode subs: %w", operation, err)
 }
 
 func (r *Repository) Save(ctx context.Context, sub Subscriber) error {

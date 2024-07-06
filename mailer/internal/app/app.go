@@ -29,7 +29,7 @@ const operation = "app init"
 
 const (
 	sendHours   = 8
-	sendMinutes = 0o5
+	sendMinutes = 20
 )
 
 const (
@@ -108,7 +108,6 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to sub to CDC: %w", operation, err)
 	}
 
-	// TODO: create fucking services
 	m := rateSub.NewSubscriber(
 		a.nats,
 		rateRepo,
@@ -119,8 +118,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to subscribe: %w", operation, err)
 	}
 
-	adp := cron.NewAdapter(rateRepo, subscriberRepo, mailSvc, cronTimeout)
-
+	adp := cron.NewAdapter(rateRepo, subscriberRepo, mailSvc, cronTimeout, a.log)
 	job := runner.NewDailyJob(sendHours, sendMinutes, a.log)
 	job.Do(adp)
 

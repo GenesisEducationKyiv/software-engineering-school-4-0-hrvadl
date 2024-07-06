@@ -191,5 +191,5 @@ networks:
     driver: bridge
 
 volumes:
-  converterdata:
-  notifierdata:
+  converterdata: {}
+  notifierdata: {}
