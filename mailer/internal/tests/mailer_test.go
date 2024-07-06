@@ -1,8 +1,10 @@
-//go:build component
+//go:build integration
 
 package tests
 
 import (
+	"bytes"
+	"context"
 	"log/slog"
 	"net"
 	"os"
@@ -10,15 +12,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/mailpit"
-	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v2/mailer"
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v3/mailer"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/app"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/cfg"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/platform/db"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/rate"
 )
 
 const (
@@ -28,15 +33,16 @@ const (
 	mailerSMTPPortEnvKey     = "MAILER_TEST_SMTP_PORT"
 	mailerTestAPIPortEnvKey  = "MAILER_TEST_API_PORT"
 	mailerTestNatsURL        = "MAILER_NATS_TEST_URL"
+	mailerTestMongoURL       = "MAILER_MONGO_TEST_URL"
 )
 
 // NOTE: I'm not doing component test using Resend mailer.
 // It has quota and I don't wanna exceed it.
-func TestAppRun(t *testing.T) {
-	const topic = "mail"
+func TestAppGotExchangeEvent(t *testing.T) {
+	const topic = "rate-fetched"
 	type args struct {
 		subject string
-		command *pb.MailCommand
+		event   *pb.ExchangeFetchedEvent
 	}
 	tests := []struct {
 		name    string
@@ -44,47 +50,28 @@ func TestAppRun(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Should send emails after receiving mail from topic",
+			name: "Should save exchange to DB",
 			args: args{
 				subject: topic,
-				command: &pb.MailCommand{
+				event: &pb.ExchangeFetchedEvent{
 					EventID:   "1",
-					EventType: "sendMsg",
-					Data: &pb.Mail{
-						To:      []string{"test@test.com"},
-						Subject: "should send to one receiver",
-						Html:    "test HTML",
-					},
+					EventType: "rate-fetched",
+					From:      "USD",
+					To:        "UAH",
+					Rate:      32.2,
 				},
 			},
 		},
 		{
-			name: "Should send emails to multiple receivers after receiving mail from topic",
+			name: "Should ignore unknown event type",
 			args: args{
-				subject: topic,
-				command: &pb.MailCommand{
+				subject: "rate-fetched",
+				event: &pb.ExchangeFetchedEvent{
 					EventID:   "1",
-					EventType: "sendMsg",
-					Data: &pb.Mail{
-						To:      []string{"test@test.com", "test2@test.com"},
-						Subject: "should send bcc to 2 receivers",
-						Html:    "test HTML",
-					},
-				},
-			},
-		},
-		{
-			name: "Should return error when mail is not valid",
-			args: args{
-				subject: topic,
-				command: &pb.MailCommand{
-					EventID:   "1",
-					EventType: "sendMsg",
-					Data: &pb.Mail{
-						To:      []string{"testest.com"},
-						Subject: "should not send when it's not valid",
-						Html:    "test HTML",
-					},
+					EventType: "unknown",
+					From:      "USD",
+					To:        "UAH",
+					Rate:      32.3,
 				},
 			},
 			wantErr: true,
@@ -93,7 +80,7 @@ func TestAppRun(t *testing.T) {
 
 	const (
 		testHost = "localhost"
-		testPort = "33300"
+		testPort = "33200"
 	)
 
 	cfg := cfg.Config{
@@ -102,48 +89,70 @@ func TestAppRun(t *testing.T) {
 		MailerPassword: mustGetEnv(t, mailerSMTPPortEnvKey),
 		NatsURL:        mustGetEnv(t, mailerTestNatsURL),
 		MailerPort:     mustGetIntEnv(t, mailerSMTPPortEnvKey),
+		MongoURL:       mustGetEnv(t, mailerTestMongoURL),
 		Port:           testPort,
 		Host:           testHost,
 	}
 
-	mp := mailpit.NewClient(cfg.MailerHost, mustGetIntEnv(t, mailerTestAPIPortEnvKey), time.Second)
 	nc, err := nats.Connect(cfg.NatsURL)
 	require.NoError(t, err, "Failed to connect to NATS")
+	js, err := jetstream.New(nc)
+	require.NoError(t, err, "Failed to connect to JetStream")
 
-	app := app.New(cfg, slog.Default())
-	go app.MustRun()
-	require.EventuallyWithT(t, func(*assert.CollectT) {
-		checkPortBusy(t, testHost, testPort)
-	}, time.Second, 100*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	_, err = js.CreateStream(
+		ctx,
+		jetstream.StreamConfig{
+			Name:     "DebeziumStream",
+			Subjects: []string{"subscribers-changed"},
+		},
+	)
+	require.NoError(t, err, "Failed to create JetStream")
+
+	buf := bytes.NewBuffer([]byte{})
+	app := app.New(cfg, slog.New(slog.NewTextHandler(buf, nil)))
+	require.NoError(t, app.Run())
+	mongo, err := db.NewConn(context.Background(), cfg.MongoURL)
+	require.NoError(t, err)
+	db := mongo.GetDB()
 
 	t.Cleanup(func() {
 		app.Stop()
+		require.NoError(t, mongo.Close(context.Background()))
 	})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Cleanup(func() {
-				require.NoError(t, mp.DeleteAll(), "Failed to cleanup emails")
+				_, err := db.Collection("rate").DeleteMany(context.Background(), bson.D{})
+				require.NoError(t, err)
 			})
 
-			bytes, err := proto.Marshal(tt.args.command)
+			bytes, err := proto.Marshal(tt.args.event)
 			require.NoError(t, err)
 			_, err = nc.Request(tt.args.subject, bytes, time.Second)
 			require.NoError(t, err)
 
 			require.EventuallyWithT(t, func(*assert.CollectT) {
-				data := tt.args.command.GetData()
-				messages, err := mp.GetAll()
-				require.NoError(t, err)
+				ex := new(rate.Exchange)
+				err := db.Collection("rate").
+					FindOne(context.Background(), bson.D{}).
+					Decode(ex)
+
 				if tt.wantErr {
-					require.Empty(t, messages, 0)
+					require.Empty(t, ex)
+					require.Error(t, err)
 					return
 				}
 
-				require.Len(t, messages, 1)
-				m := messages[0]
-				require.Equal(t, data.GetSubject(), m.Subject)
-				require.Equal(t, data.GetTo(), getToMails(m.Bcc))
+				got := *ex
+				want := tt.args.event
+
+				require.NoError(t, err)
+				require.InDelta(t, want.GetRate(), got.Rate, 2)
+				require.Equal(t, want.GetFrom(), got.From)
+				require.Equal(t, want.GetTo(), got.To)
 			}, time.Second, 100*time.Millisecond)
 		})
 	}
@@ -161,14 +170,6 @@ func mustGetEnv(t *testing.T, key string) string {
 	env := os.Getenv(key)
 	require.NotEmpty(t, env)
 	return env
-}
-
-func getToMails(to []mailpit.Receipient) []string {
-	mails := make([]string, 0, len(to))
-	for _, t := range to {
-		mails = append(mails, t.Address)
-	}
-	return mails
 }
 
 func checkPortBusy(t *testing.T, host string, port string) {

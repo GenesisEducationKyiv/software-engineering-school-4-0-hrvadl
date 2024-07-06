@@ -13,6 +13,7 @@ import (
 const (
 	operation = "rate exchange"
 	subject   = "rate-fetched"
+	eventType = subject
 )
 
 func NewClient(nats *nats.Conn, converter RateSource, log *slog.Logger) *Client {
@@ -45,7 +46,7 @@ func (c *Client) Convert(ctx context.Context) error {
 		To:        "UAH",
 		Rate:      rate,
 		EventID:   "1",
-		EventType: operation,
+		EventType: eventType,
 	})
 	if err != nil {
 		return fmt.Errorf("%s: failed to marshall proto: %w", operation, err)

@@ -97,13 +97,13 @@ tasks:
         vars:
           PORT: "{{ .MAILER_MONGO_TEST_PORT }}"
           CONTAINER_NAME: "{{ .MONGO_CONTAINER_NAME }}"
+      - task: healthcheck:mongo
+        vars:
+          CONTAINER_NAME: "{{ .MONGO_CONTAINER_NAME }}"
       - task: run:nats
         vars:
           CONTAINER_NAME: "{{ .NATS_CONTAINER_NAME }}"
           PORT: "{{ .MAILER_NATS_TEST_PORT }}"
-      - task: healthcheck:mongo
-        vars:
-          CONTAINER_NAME: "{{ .MONGO_CONTAINER_NAME }}"
       - task: healthcheck:mailpit
         vars:
           CONTAINER_NAME: "{{ .SMTP_CONTAINER_NAME }}"
@@ -146,7 +146,7 @@ tasks:
         - CONTAINER_NAME
         - PORT
     cmds:
-      - docker run -d --name {{ .CONTAINER_NAME }} -p {{ .PORT }}:4222 nats-streaming
+      - docker run -d --name {{ .CONTAINER_NAME }} -p {{ .PORT }}:4222 nats-streaming --js
 
   healthcheck:nats:
     requires:

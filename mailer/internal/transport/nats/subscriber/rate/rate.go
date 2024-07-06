@@ -16,6 +16,7 @@ import (
 const (
 	operation = "rate subscriber"
 	subject   = "rate-fetched"
+	eventType = subject
 )
 
 func NewSubscriber(
@@ -59,12 +60,17 @@ func (s *Subscriber) subscribe(msg *nats.Msg) {
 	}
 
 	defer s.ack(msg)
-	s.log.Info(
-		"Got message from NATS",
+	log := s.log.With(
 		slog.String("id", in.GetEventID()),
 		slog.String("type", in.GetEventType()),
 	)
 
+	if in.GetEventType() != eventType {
+		log.Info("Discarding unknown event...")
+		return
+	}
+
+	log.Info("Got message from nats")
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
 
@@ -75,8 +81,11 @@ func (s *Subscriber) subscribe(msg *nats.Msg) {
 	}
 
 	if err := s.replacer.Replace(ctx, rate); err != nil {
-		s.log.Error("Failed to replace rate", slog.Any("err", err))
+		log.Error("Failed to replace rate", slog.Any("err", err))
+		return
 	}
+
+	log.Info("Successfully replaced rate")
 }
 
 func (s *Subscriber) ack(msg *nats.Msg) {
