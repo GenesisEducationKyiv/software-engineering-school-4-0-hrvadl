@@ -34,18 +34,22 @@ func NewAdapter(
 	}
 }
 
+//go:generate mockgen -destination=./mocks/mock_fmt.go -package=mocks . Formatter
 type Formatter interface {
 	Format(rate float32) string
 }
 
+//go:generate mockgen -destination=./mocks/mock_rategetter.go -package=mocks . RateGetter
 type RateGetter interface {
 	Get(ctx context.Context) (*rate.Exchange, error)
 }
 
+//go:generate mockgen -destination=./mocks/mock_subgetter.go -package=mocks . SubscribersGetter
 type SubscribersGetter interface {
 	GetAll(ctx context.Context) ([]subscriber.Subscriber, error)
 }
 
+//go:generate mockgen -destination=./mocks/mock_sender.go -package=mocks . Sender
 type Sender interface {
 	Send(ctx context.Context, mail mail.Mail) error
 }

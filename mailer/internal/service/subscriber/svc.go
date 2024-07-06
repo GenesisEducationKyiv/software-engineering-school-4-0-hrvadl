@@ -27,6 +27,7 @@ type SubscriberGetter interface {
 	GetAll(ctx context.Context) ([]subscriber.Subscriber, error)
 }
 
+//go:generate mockgen -destination=./mocks/mock_subsource.go -package=mocks . SubscriberSource
 type SubscriberSource interface {
 	SubscriberSaver
 	SubscriberGetter

@@ -53,8 +53,14 @@ func (r *Repository) Save(ctx context.Context, sub Subscriber) error {
 }
 
 func (r *Repository) Delete(ctx context.Context, sub Subscriber) error {
-	if _, err := r.db.Collection(collection).DeleteOne(ctx, sub); err != nil {
+	res, err := r.db.Collection(collection).DeleteOne(ctx, sub)
+	if err != nil {
 		return fmt.Errorf("%s: %w", operation, err)
 	}
+
+	if res.DeletedCount == 0 {
+		return db.ErrNotFound
+	}
+
 	return nil
 }

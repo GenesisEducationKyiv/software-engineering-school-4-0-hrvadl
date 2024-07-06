@@ -23,6 +23,7 @@ type RateReplacer interface {
 	Replace(ctx context.Context, rate rate.Exchange) error
 }
 
+//go:generate mockgen -destination=./mocks/mock_ratesource.go -package=mocks . RateSource
 type RateSource interface {
 	RateGetter
 	RateReplacer

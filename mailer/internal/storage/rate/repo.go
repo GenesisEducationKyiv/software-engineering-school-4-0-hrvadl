@@ -43,7 +43,7 @@ func (r *Repository) Get(ctx context.Context) (*Exchange, error) {
 func (r *Repository) Replace(ctx context.Context, rate Exchange) error {
 	doc, err := r.Get(ctx)
 	switch {
-	case err == nil:
+	case err == nil && doc != nil:
 		return r.replace(ctx, *doc, rate)
 	case errors.Is(err, mongo.ErrNoDocuments):
 		return r.save(ctx, rate)
