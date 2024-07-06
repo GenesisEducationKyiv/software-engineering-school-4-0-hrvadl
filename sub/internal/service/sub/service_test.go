@@ -17,7 +17,7 @@ import (
 func TestNewService(t *testing.T) {
 	t.Parallel()
 	type args struct {
-		rr RecipientSaver
+		rr RecipientSource
 		vv Validator
 	}
 	tests := []struct {
@@ -28,11 +28,11 @@ func TestNewService(t *testing.T) {
 		{
 			name: "Should create new service correctly when correct arguments are provided",
 			args: args{
-				rr: mocks.NewMockRecipientSaver(gomock.NewController(t)),
+				rr: mocks.NewMockRecipientSource(gomock.NewController(t)),
 				vv: mocks.NewMockValidator(gomock.NewController(t)),
 			},
 			want: &Service{
-				repo:      mocks.NewMockRecipientSaver(gomock.NewController(t)),
+				repo:      mocks.NewMockRecipientSource(gomock.NewController(t)),
 				validator: mocks.NewMockValidator(gomock.NewController(t)),
 			},
 		},
@@ -60,8 +60,8 @@ func TestNewService(t *testing.T) {
 func TestServiceSubscribe(t *testing.T) {
 	t.Parallel()
 	type fields struct {
-		repo      RecipientSaver
-		validator Validator
+		repo      func(ctrl *gomock.Controller) RecipientSource
+		validator func(ctrl *gomock.Controller) Validator
 	}
 	type args struct {
 		ctx  context.Context
@@ -73,30 +73,27 @@ func TestServiceSubscribe(t *testing.T) {
 		args    args
 		want    int64
 		wantErr bool
-		setup   func(t *testing.T, saver RecipientSaver, validator Validator)
 	}{
 		{
 			name: "Should not return err when everything is correct",
 			fields: fields{
-				repo:      mocks.NewMockRecipientSaver(gomock.NewController(t)),
-				validator: mocks.NewMockValidator(gomock.NewController(t)),
+				validator: func(ctrl *gomock.Controller) Validator {
+					v := mocks.NewMockValidator(ctrl)
+					v.EXPECT().Validate("mail@gmail.com").Times(1).Return(true)
+					return v
+				},
+				repo: func(ctrl *gomock.Controller) RecipientSource {
+					rs := mocks.NewMockRecipientSource(ctrl)
+					rs.EXPECT().
+						Save(gomock.Any(), subscriber.Subscriber{Email: "mail@gmail.com"}).
+						Times(1).
+						Return(int64(1), nil)
+					return rs
+				},
 			},
 			args: args{
 				ctx:  context.Background(),
 				mail: "mail@gmail.com",
-			},
-			setup: func(t *testing.T, saver RecipientSaver, validator Validator) {
-				t.Helper()
-				rs, ok := saver.(*mocks.MockRecipientSaver)
-				require.True(t, ok, "Failed to cast saver to mock saver")
-
-				v, ok := validator.(*mocks.MockValidator)
-				require.True(t, ok, "Failed to cast validator to mock saver")
-				v.EXPECT().Validate("mail@gmail.com").Times(1).Return(true)
-				rs.EXPECT().
-					Save(gomock.Any(), subscriber.Subscriber{Email: "mail@gmail.com"}).
-					Times(1).
-					Return(int64(1), nil)
 			},
 			want:    1,
 			wantErr: false,
@@ -104,25 +101,23 @@ func TestServiceSubscribe(t *testing.T) {
 		{
 			name: "Should return err when saver returned err",
 			fields: fields{
-				repo:      mocks.NewMockRecipientSaver(gomock.NewController(t)),
-				validator: mocks.NewMockValidator(gomock.NewController(t)),
+				repo: func(ctrl *gomock.Controller) RecipientSource {
+					rs := mocks.NewMockRecipientSource(ctrl)
+					rs.EXPECT().
+						Save(gomock.Any(), subscriber.Subscriber{Email: "mail@gmail.com"}).
+						Times(1).
+						Return(int64(0), errors.New("failed to save subscriber"))
+					return rs
+				},
+				validator: func(ctrl *gomock.Controller) Validator {
+					v := mocks.NewMockValidator(ctrl)
+					v.EXPECT().Validate("mail@gmail.com").Times(1).Return(true)
+					return v
+				},
 			},
 			args: args{
 				ctx:  context.Background(),
 				mail: "mail@gmail.com",
-			},
-			setup: func(t *testing.T, saver RecipientSaver, validator Validator) {
-				t.Helper()
-				rs, ok := saver.(*mocks.MockRecipientSaver)
-				require.True(t, ok, "Failed to cast saver to mock saver")
-
-				v, ok := validator.(*mocks.MockValidator)
-				require.True(t, ok, "Failed to cast validator to mock saver")
-				v.EXPECT().Validate("mail@gmail.com").Times(1).Return(true)
-				rs.EXPECT().
-					Save(gomock.Any(), subscriber.Subscriber{Email: "mail@gmail.com"}).
-					Times(1).
-					Return(int64(0), errors.New("failed to save subscriber"))
 			},
 			want:    0,
 			wantErr: true,
@@ -130,25 +125,23 @@ func TestServiceSubscribe(t *testing.T) {
 		{
 			name: "Should return err when validator returned false",
 			fields: fields{
-				repo:      mocks.NewMockRecipientSaver(gomock.NewController(t)),
-				validator: mocks.NewMockValidator(gomock.NewController(t)),
+				repo: func(ctrl *gomock.Controller) RecipientSource {
+					rs := mocks.NewMockRecipientSource(ctrl)
+					rs.EXPECT().
+						Save(gomock.Any(), subscriber.Subscriber{Email: "mail@gmail.com"}).
+						Times(0).
+						Return(int64(0), errors.New("failed to save subscriber"))
+					return rs
+				},
+				validator: func(ctrl *gomock.Controller) Validator {
+					v := mocks.NewMockValidator(ctrl)
+					v.EXPECT().Validate("").Times(1).Return(false)
+					return v
+				},
 			},
 			args: args{
 				ctx:  context.Background(),
 				mail: "",
-			},
-			setup: func(t *testing.T, saver RecipientSaver, validator Validator) {
-				t.Helper()
-				rs, ok := saver.(*mocks.MockRecipientSaver)
-				require.True(t, ok, "Failed to cast saver to mock saver")
-
-				v, ok := validator.(*mocks.MockValidator)
-				require.True(t, ok, "Failed to cast validator to mock saver")
-				v.EXPECT().Validate("").Times(1).Return(false)
-				rs.EXPECT().
-					Save(gomock.Any(), subscriber.Subscriber{Email: "mail@gmail.com"}).
-					Times(0).
-					Return(int64(0), errors.New("failed to save subscriber"))
 			},
 			want:    0,
 			wantErr: true,
@@ -158,8 +151,8 @@ func TestServiceSubscribe(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			tt.setup(t, tt.fields.repo, tt.fields.validator)
-			s := &Service{repo: tt.fields.repo, validator: tt.fields.validator}
+			ctrl := gomock.NewController(t)
+			s := &Service{repo: tt.fields.repo(ctrl), validator: tt.fields.validator(ctrl)}
 			got, err := s.Subscribe(tt.args.ctx, tt.args.mail)
 			if tt.wantErr {
 				require.Error(t, err)
