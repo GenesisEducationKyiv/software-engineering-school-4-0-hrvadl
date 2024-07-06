@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/cron"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/ratewatcher"
 	"github.com/nats-io/nats.go"
@@ -18,15 +17,11 @@ import (
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/cfg"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/sender"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/sender/formatter"
 	subs "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/sub"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/validator"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/platform/db"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/clients/ratewatcher"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/server/sub"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/nats/publisher/mailer"
 )
 
 const operation = "app init"
@@ -86,40 +81,9 @@ func (a *App) Run() error {
 	svc := subs.NewService(sr, v)
 	sub.Register(a.srv, svc, a.log.With(slog.String("source", "sub")))
 
-	sg := subscriber.NewRepo(db)
-	fmter := formatter.NewWithDate()
-	rw, err := ratewatcher.NewClient(
-		a.cfg.RateWatcherAddr,
-		a.log.With(slog.String("source", "rateWatcher")),
-	)
-	if err != nil {
-		return fmt.Errorf("%s: failed to connect to rate watcher: %w", operation, err)
-	}
-
 	if a.nats, err = nats.Connect(a.cfg.NatsURL); err != nil {
 		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
 	}
-
-	m := mailer.NewClient(
-		mailer.NewAdapter(a.nats, sendTimeout),
-		a.log.With(slog.String("source", "mailer")),
-	)
-
-	mailSender := sender.New(
-		m,
-		sg,
-		fmter,
-		rw,
-		a.log.With(slog.String("source", "cron sender")),
-	)
-
-	cronAdapter := sender.NewCronJobAdapter(
-		mailSender,
-		cronJobTimeout,
-		a.log.With(slog.String("source", "adapter")),
-	)
-	job := cron.NewDailyJob(cronJobHour, cronJobMinute, a.log.With(slog.String("source", "cron")))
-	job.Do(cronAdapter)
 
 	healthcheck := health.NewServer()
 	healthgrpc.RegisterHealthServer(a.srv, healthcheck)

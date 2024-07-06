@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240623094059-8f29616a5613
-	github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos v0.0.0-20240624085600-bd301a089790
+	github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos v0.0.0-20240706091713-41d86ea156a0
 	github.com/caarlos0/env/v11 v11.1.0
 	github.com/go-chi/chi/v5 v5.0.14
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0

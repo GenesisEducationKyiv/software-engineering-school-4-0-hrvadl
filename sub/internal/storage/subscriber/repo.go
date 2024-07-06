@@ -51,3 +51,24 @@ func (r *Repo) Get(ctx context.Context) ([]Subscriber, error) {
 
 	return subscribers, nil
 }
+
+// GetByEmail method gets subscriber from the DB by his email.
+func (r *Repo) GetByEmail(ctx context.Context, email string) (*Subscriber, error) {
+	const query = "SELECT * FROM subscribers WHERE email = ? LIMIT 1"
+	subscriber := Subscriber{}
+	if err := r.db.SelectContext(ctx, &subscriber, query, email); err != nil {
+		return nil, err
+	}
+
+	return &subscriber, nil
+}
+
+// DeleteByEmail method gets subscriber from the DB by his email.
+func (r *Repo) DeleteByEmail(ctx context.Context, email string) error {
+	const query = "DELETE FROM subscribers WHERE email = ?"
+	if _, err := r.db.ExecContext(ctx, query, email); err != nil {
+		return err
+	}
+
+	return nil
+}

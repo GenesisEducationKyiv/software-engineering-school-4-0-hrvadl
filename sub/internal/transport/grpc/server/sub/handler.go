@@ -22,6 +22,7 @@ func Register(srv *grpc.Server, svc Service, log *slog.Logger) {
 //go:generate mockgen -destination=./mocks/mock_svcr.go -package=mocks . Service
 type Service interface {
 	Subscribe(ctx context.Context, mail string) (int64, error)
+	Unsubscribe(ctx context.Context, mail string) error
 }
 
 // Server represents subscribe GRPC server
@@ -38,6 +39,18 @@ type Server struct {
 func (s *Server) Subscribe(ctx context.Context, req *pb.SubscribeRequest) (*emptypb.Empty, error) {
 	_, err := s.svc.Subscribe(ctx, req.GetEmail())
 	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+// Unsubscribe method calls underlying service method and returns an error, in case there was a
+// failure.
+func (s *Server) Unsubscribe(
+	ctx context.Context,
+	req *pb.UnsubscribeRequest,
+) (*emptypb.Empty, error) {
+	if err := s.svc.Unsubscribe(ctx, req.GetEmail()); err != nil {
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil
