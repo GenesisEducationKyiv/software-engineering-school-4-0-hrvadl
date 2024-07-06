@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/ratewatcher"
@@ -25,13 +24,6 @@ import (
 )
 
 const operation = "app init"
-
-const (
-	cronJobHour    = 12
-	cronJobMinute  = 0o0
-	cronJobTimeout = time.Minute * 1
-	sendTimeout    = time.Second * 5
-)
 
 // New constructs new App with provided arguments.
 // NOTE: than neither cfg or log can't be nil or App will panic.

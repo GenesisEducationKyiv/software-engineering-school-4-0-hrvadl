@@ -92,7 +92,7 @@ func (s *Subscriber) subscribe(msg jetstream.Msg) {
 	}
 
 	defer s.ack(msg)
-	s.log.Info("Got sub change event from NATS")
+	s.log.Info("Got sub change event from NATS", slog.Bool("deleted", in.Deleted))
 
 	sub := subscriber.Subscriber{Email: in.Email}
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
