@@ -20,6 +20,7 @@ func NewAdapter(
 	rg RateGetter,
 	sg SubscribersGetter,
 	s Sender,
+	f Formatter,
 	timeout time.Duration,
 	log *slog.Logger,
 ) *Adapter {
@@ -28,8 +29,13 @@ func NewAdapter(
 		subscribers: sg,
 		sender:      s,
 		timeout:     timeout,
+		formatter:   f,
 		log:         log,
 	}
+}
+
+type Formatter interface {
+	Format(rate float32) string
 }
 
 type RateGetter interface {
@@ -48,6 +54,7 @@ type Adapter struct {
 	rate        RateGetter
 	subscribers SubscribersGetter
 	sender      Sender
+	formatter   Formatter
 	timeout     time.Duration
 	log         *slog.Logger
 }
@@ -70,7 +77,7 @@ func (a *Adapter) Do() error {
 	m := mail.Mail{
 		To:      extractMailFromSub(sub),
 		Subject: "Rate exchange",
-		HTML:    fmt.Sprintf("%v", rate),
+		HTML:    a.formatter.Format(rate.Rate),
 	}
 
 	if err := a.sender.Send(ctx, m); err != nil {

@@ -17,6 +17,7 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/gomail"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/resend"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/cron"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/cron/formatter"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/mail"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/rate"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/subscriber"
@@ -122,7 +123,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to subscribe: %w", operation, err)
 	}
 
-	adp := cron.NewAdapter(rateSvc, subSvc, mailSvc, cronTimeout, a.log)
+	adp := cron.NewAdapter(rateSvc, subSvc, mailSvc, formatter.NewWithDate(), cronTimeout, a.log)
 	job := runner.NewDailyJob(sendHours, sendMinutes, a.log)
 	job.Do(adp)
 
