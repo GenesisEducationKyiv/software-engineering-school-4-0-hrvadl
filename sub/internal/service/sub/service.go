@@ -85,8 +85,7 @@ func (s *Service) Unsubscribe(ctx context.Context, mail string) error {
 		return ErrNotExists
 	}
 
-	err := s.repo.DeleteByEmail(ctx, mail)
-	if err != nil {
+	if err := s.repo.DeleteByEmail(ctx, mail); err != nil {
 		return fmt.Errorf("%w: %w", ErrFailedToUnsubscrbe, err)
 	}
 

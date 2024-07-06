@@ -56,7 +56,7 @@ func (r *Repo) Get(ctx context.Context) ([]Subscriber, error) {
 func (r *Repo) GetByEmail(ctx context.Context, email string) (*Subscriber, error) {
 	const query = "SELECT * FROM subscribers WHERE email = ? LIMIT 1"
 	subscriber := Subscriber{}
-	if err := r.db.SelectContext(ctx, &subscriber, query, email); err != nil {
+	if err := r.db.GetContext(ctx, &subscriber, query, email); err != nil {
 		return nil, err
 	}
 
