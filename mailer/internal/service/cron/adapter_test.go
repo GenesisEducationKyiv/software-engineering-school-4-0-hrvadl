@@ -13,6 +13,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/cron/mocks"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/mail"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/rate"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/subscriber"
 )
@@ -169,7 +170,11 @@ func TestAdapterDo(t *testing.T) {
 				sender: func(c *gomock.Controller) Sender {
 					s := mocks.NewMockSender(c)
 					s.EXPECT().
-						Send(gomock.Any(), "rate 32.2").
+						Send(gomock.Any(), mail.Mail{
+							Subject: "Rate exchange",
+							To:      []string{"test@test.com"},
+							HTML:    "rate 32.2",
+						}).
 						Times(1).
 						Return(errors.New("failed to send"))
 					return s
@@ -204,7 +209,11 @@ func TestAdapterDo(t *testing.T) {
 				sender: func(c *gomock.Controller) Sender {
 					s := mocks.NewMockSender(c)
 					s.EXPECT().
-						Send(gomock.Any(), "rate 32.2").
+						Send(gomock.Any(), mail.Mail{
+							To:      []string{"test@test.com"},
+							Subject: "Rate exchange",
+							HTML:    "rate 32.2",
+						}).
 						Times(1).
 						Return(nil)
 					return s
