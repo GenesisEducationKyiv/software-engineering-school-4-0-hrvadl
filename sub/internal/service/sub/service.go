@@ -33,6 +33,7 @@ type RecipientGetter interface {
 	GetByEmail(ctx context.Context, email string) (*subscriber.Subscriber, error)
 }
 
+//go:generate mockgen -destination=./mocks/mock_src.go -package=mocks . RecipientSource
 type RecipientSource interface {
 	RecipientSaver
 	RecipientDeleter
