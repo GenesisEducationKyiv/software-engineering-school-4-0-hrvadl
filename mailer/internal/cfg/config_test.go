@@ -19,6 +19,7 @@ const (
 	mailerHostEnvKey          = "MAILER_SMTP_HOST"
 	mailerPortEnvKey          = "MAILER_SMTP_PORT"
 	natsURLEnvKey             = "NATS_URL"
+	mongoURLEnvKey            = "MONGO_URL"
 )
 
 func TestMust(t *testing.T) {
@@ -90,6 +91,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
 			},
 			want: &Config{
 				LogLevel:            "debug",
@@ -101,8 +103,26 @@ func TestNewFromEnv(t *testing.T) {
 				MailerHost:          "smtp.google.com",
 				MailerPort:          528,
 				NatsURL:             "nats://nats:4222",
+				MongoURL:            "mongo://mongo:27777",
 			},
 			wantErr: false,
+		},
+		{
+			name: "Should not parse config when mongo url is missing",
+			setup: func(t *testing.T) {
+				t.Helper()
+				t.Setenv(logLevelEnvKey, "debug")
+				t.Setenv(portEnvKey, "80")
+				t.Setenv(mailerTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackTokenEnvKey, "secret")
+				t.Setenv(mailerFallbackFromEnvKey, "secret@test.com")
+				t.Setenv(mailerFromEnvKey, "secret@test.com")
+				t.Setenv(mailerHostEnvKey, "smtp.google.com")
+				t.Setenv(mailerPortEnvKey, "528")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+			},
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "Should not parse config correctly when log level is missing",
@@ -116,6 +136,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
 			},
 			want:    nil,
 			wantErr: true,
@@ -131,6 +152,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerFallbackFromEnvKey, "secret@test.com")
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
 			},
 			want:    nil,
 			wantErr: true,
@@ -147,6 +169,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
 			},
 			want:    nil,
 			wantErr: true,
@@ -163,6 +186,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
 			},
 			want:    nil,
 			wantErr: true,
@@ -179,6 +203,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
 			},
 			want:    nil,
 			wantErr: true,
@@ -195,6 +220,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
 			},
 			want:    nil,
 			wantErr: true,
@@ -210,6 +236,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerFallbackFromEnvKey, "secret@test.com")
 				t.Setenv(mailerFromEnvKey, "secret@test.com")
 				t.Setenv(mailerHostEnvKey, "host")
+				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 			},
 			want:    nil,
@@ -227,6 +254,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerFromEnvKey, "secret@test.com")
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
 			},
 			want:    nil,
 			wantErr: true,
@@ -243,6 +271,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerFromEnvKey, "secret@test.com")
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
+				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
 			},
 			want:    nil,
 			wantErr: true,
