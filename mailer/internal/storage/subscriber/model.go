@@ -1,5 +1,8 @@
 package subscriber
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type Subscriber struct {
-	Email string `json:"email"`
+	ID    primitive.ObjectID `json:"_id,omitempty"`
+	Email string             `json:"email"`
 }

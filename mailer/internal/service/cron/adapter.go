@@ -11,7 +11,10 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/subscriber"
 )
 
-const operation = "cron adapter"
+const (
+	operation   = "cron adapter"
+	sendTimeout = time.Second * 10
+)
 
 func NewAdapter(
 	rg RateGetter,
@@ -28,7 +31,7 @@ func NewAdapter(
 }
 
 type RateGetter interface {
-	Get(context.Context) (*rate.Exchange, error)
+	Get(ctx context.Context) (*rate.Exchange, error)
 }
 
 type SubscribersGetter interface {
@@ -48,7 +51,8 @@ type Adapter struct {
 }
 
 func (a *Adapter) Do() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	a.log.Info("Sending mails...")
+	ctx, cancel := context.WithTimeout(context.Background(), sendTimeout)
 	defer cancel()
 
 	rate, err := a.rate.Get(ctx)

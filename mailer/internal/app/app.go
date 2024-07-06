@@ -10,10 +10,8 @@ import (
 	"time"
 
 	runner "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/cron"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
-	"google.golang.org/grpc"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/cfg"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/gomail"
@@ -29,7 +27,17 @@ import (
 
 const operation = "app init"
 
-const mailerTimeout = time.Second * 5
+const (
+	sendHours   = 8
+	sendMinutes = 0o5
+)
+
+const (
+	mailerTimeout = time.Second * 5
+	mongoTimeout  = time.Second * 10
+	subTimeout    = time.Second * 5
+	cronTimeout   = time.Second * 5
+)
 
 // New constructs new App with provided arguments.
 // NOTE: than neither cfg or log can't be nil or App will panic.
@@ -46,7 +54,6 @@ func New(cfg cfg.Config, log *slog.Logger) *App {
 type App struct {
 	cfg  cfg.Config
 	log  *slog.Logger
-	srv  *grpc.Server
 	nats *nats.Conn
 	db   *db.Conn
 }
@@ -65,11 +72,7 @@ func (a *App) MustRun() {
 // starts listening on the provided ports. Could return an error if any of
 // described above steps failed.
 func (a *App) Run() error {
-	a.srv = grpc.NewServer(grpc.ChainUnaryInterceptor(
-		logger.NewServerGRPCMiddleware(a.log),
-	))
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
 	defer cancel()
 
 	var err error
@@ -100,7 +103,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to jetstream: %w", operation, err)
 	}
 
-	subSubscriber := subSub.NewSubscriber(js, subscriberRepo, a.log, time.Second*5)
+	subSubscriber := subSub.NewSubscriber(js, subscriberRepo, a.log, subTimeout)
 	if err = subSubscriber.Subscribe(); err != nil {
 		return fmt.Errorf("%s: failed to sub to CDC: %w", operation, err)
 	}
@@ -116,9 +119,9 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to subscribe: %w", operation, err)
 	}
 
-	adp := cron.NewAdapter(rateRepo, subscriberRepo, mailSvc, time.Second*5)
+	adp := cron.NewAdapter(rateRepo, subscriberRepo, mailSvc, cronTimeout)
 
-	job := runner.NewDailyJob(19, 23, a.log)
+	job := runner.NewDailyJob(sendHours, sendMinutes, a.log)
 	job.Do(adp)
 
 	return nil
@@ -136,7 +139,14 @@ func (a *App) GracefulStop() {
 }
 
 func (a *App) Stop() {
-	a.srv.Stop()
 	a.nats.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	defer cancel()
+
+	if err := a.db.Close(ctx); err != nil {
+		a.log.Error("Failed to gracefully stop mongo", slog.Any("err", err))
+	}
+
 	a.log.Info("Successfully terminated server. Bye!")
 }

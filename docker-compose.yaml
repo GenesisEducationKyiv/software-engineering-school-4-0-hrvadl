@@ -183,6 +183,8 @@ services:
       - .env
     networks:
       - converter
+    volumes:
+      - notifierdata:/data/db
 
 networks:
   converter:
@@ -190,3 +192,4 @@ networks:
 
 volumes:
   converterdata:
+  notifierdata:

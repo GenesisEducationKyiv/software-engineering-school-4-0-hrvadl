@@ -27,15 +27,6 @@ import (
 	rwnats "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw/internal/transport/nats/publisher/ratewatcher"
 )
 
-// TODO:
-// move cron to pkg: done
-// add cron job to rate watcher: done
-// send events from sub: done
-// receive events in mailer: in progress
-// add outbox: in progress
-// add persistence layer to mailer
-// add cron job to mailer
-
 const (
 	operation       = "app init"
 	publishTimeout  = time.Second * 5

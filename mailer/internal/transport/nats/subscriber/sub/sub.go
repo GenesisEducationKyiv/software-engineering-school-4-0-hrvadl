@@ -85,18 +85,15 @@ type SubscriberChangedEvent struct {
 }
 
 func (s *Subscriber) subscribe(msg jetstream.Msg) {
-	s.log.Info(
-		"Got message from NATS",
-		slog.Any("msg", string(msg.Data())),
-	)
-
 	var in SubscriberChangedEvent
 	if err := json.Unmarshal(msg.Data(), &in); err != nil {
 		s.log.Error("Failed to parse change event", slog.Any("err", err))
 		return
 	}
 
-	s.ack(msg)
+	defer s.ack(msg)
+	s.log.Info("Got sub change event from NATS")
+
 	sub := subscriber.Subscriber{Email: in.Email}
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
@@ -109,7 +106,7 @@ func (s *Subscriber) subscribe(msg jetstream.Msg) {
 	}
 
 	if err != nil {
-		s.log.Error("Failed to delete/save rate", slog.Any("err", err))
+		s.log.Error("Failed to delete/save sub", slog.Any("err", err))
 	}
 }
 

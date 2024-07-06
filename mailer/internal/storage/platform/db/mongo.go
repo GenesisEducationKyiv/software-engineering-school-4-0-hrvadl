@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -25,7 +24,6 @@ func NewConn(ctx context.Context, url string) (*Conn, error) {
 		ApplyURI(url).
 		SetBSONOptions(bsonOpts)
 
-	slog.Info("Connecting to mongo", slog.String("url", url))
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w: %w", operation, ErrFailedConnect, err)

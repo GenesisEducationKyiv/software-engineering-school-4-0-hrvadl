@@ -5,4 +5,4 @@
 */bin
 **/output/
 .idea/
-schema.json
+**/schema.json
