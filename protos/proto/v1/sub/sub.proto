@@ -14,6 +14,7 @@ service SubService {
     description: "Service responsible for subscribing users and sending rate exchange notifications"
   };
   rpc Unsubscribe(UnsubscribeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {post: "/api/v1/unsubscribe"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
       description: "Subscribe user"
       summary: "Subscribe user"
