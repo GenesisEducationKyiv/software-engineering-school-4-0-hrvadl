@@ -158,6 +158,21 @@ func TestServiceReplace(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Should return error if rate is empty",
+			fields: fields{
+				rate: func(c *gomock.Controller) RateSource {
+					rs := mocks.NewMockRateSource(c)
+					rs.EXPECT().Replace(context.Background(), rate.Exchange{}).Times(0)
+					return rs
+				},
+			},
+			args: args{
+				ctx:  context.Background(),
+				rate: rate.Exchange{},
+			},
+			wantErr: true,
+		},
+		{
 			name: "Should return error if rate source failed",
 			fields: fields{
 				rate: func(c *gomock.Controller) RateSource {

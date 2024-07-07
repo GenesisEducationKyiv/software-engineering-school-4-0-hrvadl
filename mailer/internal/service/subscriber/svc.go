@@ -52,9 +52,14 @@ func (s *Service) GetAll(ctx context.Context) ([]subscriber.Subscriber, error) {
 }
 
 func (s *Service) Save(ctx context.Context, sub subscriber.Subscriber) error {
+	if sub.Email == "" {
+		return ErrEmtpyEmail
+	}
+
 	if err := s.subscriber.Save(ctx, sub); err != nil {
 		return fmt.Errorf("%w: %w", ErrFailedToSave, err)
 	}
+
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -47,6 +48,7 @@ func (r *Repository) GetAll(ctx context.Context) ([]Subscriber, error) {
 
 func (r *Repository) Save(ctx context.Context, sub Subscriber) error {
 	if _, err := r.db.Collection(collection).InsertOne(ctx, sub); err != nil {
+		slog.Info("Got err", slog.Any("err", err))
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 	return nil

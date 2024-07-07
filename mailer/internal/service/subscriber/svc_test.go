@@ -169,6 +169,23 @@ func TestServiceSave(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Should return error if mail is empty",
+			fields: fields{
+				subscriber: func(c *gomock.Controller) SubscriberSource {
+					ss := mocks.NewMockSubscriberSource(c)
+					ss.EXPECT().
+						Save(context.Background(), subscriber.Subscriber{}).
+						Times(0)
+					return ss
+				},
+			},
+			args: args{
+				ctx: context.Background(),
+				sub: subscriber.Subscriber{},
+			},
+			wantErr: true,
+		},
+		{
 			name: "Should return error when source failed",
 			fields: fields{
 				subscriber: func(c *gomock.Controller) SubscriberSource {

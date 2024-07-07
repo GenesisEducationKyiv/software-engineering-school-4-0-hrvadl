@@ -47,8 +47,13 @@ func (s *Service) Get(ctx context.Context) (*rate.Exchange, error) {
 }
 
 func (s *Service) Replace(ctx context.Context, rate rate.Exchange) error {
+	if rate.Rate == 0 {
+		return ErrEmptyRate
+	}
+
 	if err := s.rate.Replace(ctx, rate); err != nil {
 		return fmt.Errorf("%w: %w", ErrFailedToReplace, err)
 	}
+
 	return nil
 }
