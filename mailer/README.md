@@ -1,6 +1,6 @@
 # Mailer microservice
 
-This service is responsible for sending email using 3rd party provider. Currently, I'm using [Resend](https://resend.com/overview) as a mail provider.
+This service is responsible for sending email using 3rd party provider.
 
 ## Available tasks
 
@@ -40,15 +40,16 @@ If you want to run it as a standalone service you need:
 
 <img width="756" alt="image" src="https://github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/assets/93580374/dd9e8930-da1b-41da-a7d5-2c1b4209f701">
 
-
-
 ## Folder structure
 
 1. `pkg` contains possibly reusable package, not binded to this project. Currently it contains only logger utils
 2. `internal`contains packages binded to this project.
    - `cfg` contains config which is read from environment vars.
    - `app` is an abstraction with all services initialization.
-   - `transport` contains all transport layer logic: grpc server.
+   - `transport` contains all transport layer logic: nats subscriber.
    - `service` contains all domain logic.
+   - `storage` contains everything related to the persistance layer: connection to db logic & repositories with domain models.
+   - `archtest` contains architecture dependency checks.
+   - `test` contains end-to-end component tests.
 3. `cmd` contains entrypoints to the program.
 4. `platform` contains specific implementations for sending mails which could possibly change/be changed.
