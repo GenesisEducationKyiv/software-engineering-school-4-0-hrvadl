@@ -31,8 +31,8 @@ import (
 const operation = "app init"
 
 const (
-	sendHours   = 8
-	sendMinutes = 45
+	sendHours   = 12
+	sendMinutes = 0o0
 )
 
 const (
