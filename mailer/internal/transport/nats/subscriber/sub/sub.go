@@ -21,7 +21,7 @@ const (
 
 func NewSubscriber(
 	js jetstream.JetStream,
-	sc SubscriberCommander,
+	sc SubscriberSource,
 	log *slog.Logger,
 	timeout time.Duration,
 ) *Subscriber {
@@ -41,14 +41,14 @@ type SubscriberDeleter interface {
 	Delete(ctx context.Context, sub subscriber.Subscriber) error
 }
 
-type SubscriberCommander interface {
+type SubscriberSource interface {
 	SubscriberSaver
 	SubscriberDeleter
 }
 
 type Subscriber struct {
 	stream    jetstream.JetStream
-	commander SubscriberCommander
+	commander SubscriberSource
 	log       *slog.Logger
 	timeout   time.Duration
 }

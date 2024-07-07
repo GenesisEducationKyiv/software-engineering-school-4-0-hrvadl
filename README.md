@@ -119,7 +119,8 @@ Then you can visit http://localhost:6060/pkg/github.com/hrvadl/converter/?m=all 
 
 ## App diagram 🏛️
 
-<img width="958" alt="image" src="https://github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/assets/93580374/483a8d8b-d75d-4893-8822-a4e838ea946d">
+<img width="864" alt="image" src="https://github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/assets/93580374/3a7cc167-af07-4674-9c87-b35bb9f6f871">
+
 
 
 
