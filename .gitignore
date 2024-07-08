@@ -6,3 +6,4 @@
 **/output/
 .idea/
 infra/debezium/schema.json
+application.properties

@@ -3,8 +3,8 @@ debezium.source.connector.class=io.debezium.connector.mysql.MySqlConnector
 
 debezium.source.database.hostname=db
 debezium.source.database.port=3306
-debezium.source.database.user=root
-debezium.source.database.password=password
+debezium.source.database.user=
+debezium.source.database.password=
 debezium.source.database.dbname=converter
 debezium.source.database.server.id=1
 
@@ -35,4 +35,3 @@ debezium.sink.type=nats-jetstream
 debezium.sink.nats-jetstream.url=nats://nats:4222
 debezium.sink.nats-jetstream.create-stream=true
 debezium.sink.nats-jetstream.subjects=subscribers-changed
-
