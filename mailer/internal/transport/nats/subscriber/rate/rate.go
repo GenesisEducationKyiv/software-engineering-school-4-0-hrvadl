@@ -59,7 +59,6 @@ func (s *Subscriber) subscribe(msg *nats.Msg) {
 		return
 	}
 
-	defer s.ack(msg)
 	log := s.log.With(
 		slog.String("id", in.GetEventID()),
 		slog.String("type", in.GetEventType()),
@@ -67,6 +66,7 @@ func (s *Subscriber) subscribe(msg *nats.Msg) {
 
 	if in.GetEventType() != eventType {
 		log.Info("Discarding unknown event...")
+		s.nack(msg)
 		return
 	}
 
@@ -82,14 +82,22 @@ func (s *Subscriber) subscribe(msg *nats.Msg) {
 
 	if err := s.replacer.Replace(ctx, rate); err != nil {
 		log.Error("Failed to replace rate", slog.Any("err", err))
+		s.nack(msg)
 		return
 	}
 
+	s.ack(msg)
 	log.Info("Successfully replaced rate")
 }
 
 func (s *Subscriber) ack(msg *nats.Msg) {
 	if err := msg.Ack(); err != nil {
 		s.log.Error("Failed to send ack", slog.Any("err", err))
+	}
+}
+
+func (s *Subscriber) nack(msg *nats.Msg) {
+	if err := msg.Nak(); err != nil {
+		s.log.Error("Failed to send nack", slog.Any("err", err))
 	}
 }

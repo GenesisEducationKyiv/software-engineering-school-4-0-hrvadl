@@ -2,7 +2,6 @@ package sub
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -64,10 +63,15 @@ func (o *Outboxer) Do() error {
 func (o *Outboxer) publish(e event.Event) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+
 	o.log.Info("Running outbox...")
 	err := o.pub.Publish(ctx, SubscriberChangedEvent{
 		Email:   e.Payload,
 		Deleted: e.Type == event.Add,
 	})
-	return errors.Join(err, o.eventdeletter.DeleteByID(ctx, e.ID))
+	if err != nil {
+		return err
+	}
+
+	return o.eventdeletter.DeleteByID(ctx, e.ID)
 }
