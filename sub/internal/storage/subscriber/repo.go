@@ -2,20 +2,21 @@ package subscriber
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/event"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/platform/db"
 )
 
-// Repo is a thin abstraction to not do sqlx queries
-// directly in the services. Therefore specific underlying DB could
-// be more easily changed in the future.
-type Repo struct {
-	db *sqlx.DB
-}
+const (
+	deleteEvent = "delete-subscriber"
+	insertEvent = "add-subscriber"
+)
 
 // NewRepo constructs repo with provided sqlx DB connection.
 // NOTE: it expects db connection to be connection MySQL.
@@ -25,21 +26,49 @@ func NewRepo(db *sqlx.DB) *Repo {
 	}
 }
 
+// Repo is a thin abstraction to not do sqlx queries
+// directly in the services. Therefore specific underlying DB could
+// be more easily changed in the future.
+type Repo struct {
+	db *sqlx.DB
+}
+
 // Save method saves subscriber to the repo and then returns
 // newly created ID. Could return an error if email is not valid, or such email
 // already exists.
 func (r *Repo) Save(ctx context.Context, s Subscriber) (int64, error) {
-	res, err := r.db.ExecContext(ctx, "INSERT INTO subscribers (email) VALUES (?)", s.Email)
-	if err == nil {
-		return res.LastInsertId()
+	const query = "INSERT INTO subscribers (email) VALUES (?)"
+
+	tx, err := r.db.BeginTxx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	var mySQLErr *mysql.MySQLError
-	if errors.As(err, &mySQLErr) && mySQLErr.Number == db.AlreadyExistsErrCode {
-		return 0, ErrAlreadyExists
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, tx.Rollback())
+		} else {
+			err = errors.Join(err, tx.Commit())
+		}
+	}()
+
+	res, err := tx.ExecContext(ctx, query, s.Email)
+	if err != nil {
+		var mySQLErr *mysql.MySQLError
+		if errors.As(err, &mySQLErr) && mySQLErr.Number == db.AlreadyExistsErrCode {
+			return 0, ErrAlreadyExists
+		}
+
+		return 0, err
 	}
 
-	return 0, err
+	e := event.Event{Type: insertEvent, Payload: s.Email}
+	es := event.NewSaver(tx)
+	if err := es.Save(ctx, e); err != nil {
+		return 0, fmt.Errorf("failed to save event: %w", err)
+	}
+
+	return res.LastInsertId()
 }
 
 // Get method gets all subscribers from the DB.
@@ -66,8 +95,28 @@ func (r *Repo) GetByEmail(ctx context.Context, email string) (*Subscriber, error
 // DeleteByEmail method gets subscriber from the DB by his email.
 func (r *Repo) DeleteByEmail(ctx context.Context, email string) error {
 	const query = "DELETE FROM subscribers WHERE email = ?"
+
+	tx, err := r.db.BeginTxx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return fmt.Errorf(" failed to create transaction: %w", err)
+	}
+
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, tx.Rollback())
+		} else {
+			err = errors.Join(err, tx.Commit())
+		}
+	}()
+
 	if _, err := r.db.ExecContext(ctx, query, email); err != nil {
-		return err
+		return fmt.Errorf("failed to delete sub: %w", err)
+	}
+
+	e := event.Event{Type: deleteEvent, Payload: email}
+	es := event.NewSaver(tx)
+	if err := es.Save(ctx, e); err != nil {
+		return fmt.Errorf("failed to save event: %w", err)
 	}
 
 	return nil
