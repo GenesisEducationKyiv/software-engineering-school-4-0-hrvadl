@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
+
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
 )
 
 const (
@@ -24,11 +26,11 @@ func NewSubscriber(conn *nats.Conn, compensator Compensator, log *slog.Logger) *
 }
 
 type Subscriber interface {
-	Subscribe(ctx context.Context, mail string) (int64, error)
+	Subscribe(ctx context.Context, sub subscriber.Subscriber) (int64, error)
 }
 
 type Unsubscriber interface {
-	Unsubscribe(ctx context.Context, mail string) error
+	Unsubscribe(ctx context.Context, sub subscriber.Subscriber) error
 }
 
 type Compensator interface {
@@ -71,11 +73,15 @@ func (s *EventSubscriber) consume(msg *nats.Msg) {
 	ctx, cancel := context.WithTimeout(context.Background(), compensateTimeout)
 	defer cancel()
 
-	var err error
+	var (
+		err error
+		sub = subscriber.Subscriber{Email: in.Email}
+	)
+
 	if in.Deleted {
-		_, err = s.compensator.Subscribe(ctx, in.Email)
+		_, err = s.compensator.Subscribe(ctx, sub)
 	} else {
-		err = s.compensator.Unsubscribe(ctx, in.Email)
+		err = s.compensator.Unsubscribe(ctx, sub)
 	}
 
 	if err != nil {

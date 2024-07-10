@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
 )
@@ -56,12 +57,13 @@ type Service struct {
 // First of all, it validates subscriber's email.
 // Then it call underlying repo to save subscriber:
 // If OK returns ID of saved subscriber, if not - returns an error.
-func (s *Service) Subscribe(ctx context.Context, mail string) (int64, error) {
-	if !s.validator.Validate(mail) {
+func (s *Service) Subscribe(ctx context.Context, sub subscriber.Subscriber) (int64, error) {
+	if !s.validator.Validate(sub.Email) {
 		return 0, ErrInvalidEmail
 	}
 
-	resp, err := s.repo.Save(ctx, subscriber.Subscriber{Email: mail})
+	resp, err := s.repo.Save(ctx, sub)
+	slog.Info("Subscribe", slog.Any("resp", resp), slog.Any("err", err))
 	if err == nil {
 		return resp, nil
 	}
@@ -77,16 +79,16 @@ func (s *Service) Subscribe(ctx context.Context, mail string) (int64, error) {
 // First of all, it validates subscriber's email.
 // Then it call underlying repo to delete subscriber:
 // If OK returns nil, if not - returns an error.
-func (s *Service) Unsubscribe(ctx context.Context, mail string) error {
-	if !s.validator.Validate(mail) {
+func (s *Service) Unsubscribe(ctx context.Context, sub subscriber.Subscriber) error {
+	if !s.validator.Validate(sub.Email) {
 		return ErrInvalidEmail
 	}
 
-	if sub, _ := s.repo.GetByEmail(ctx, mail); sub == nil {
+	if sub, _ := s.repo.GetByEmail(ctx, sub.Email); sub == nil {
 		return ErrNotExists
 	}
 
-	if err := s.repo.DeleteByEmail(ctx, mail); err != nil {
+	if err := s.repo.DeleteByEmail(ctx, sub.Email); err != nil {
 		return fmt.Errorf("%w: %w", ErrFailedToUnsubscrbe, err)
 	}
 
