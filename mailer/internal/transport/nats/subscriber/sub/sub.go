@@ -7,26 +7,28 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/subscriber"
 )
 
 const (
-	operation = "sub subscriber"
-	subject   = "subscribers-changed"
-	stream    = "DebeziumStream"
-	consumer  = "sub-consumer"
+	operation     = "sub subscriber"
+	subject       = "subscribers-changed"
+	failedSubject = "subscribers-changed-failed"
+	stream        = "DebeziumStream"
+	consumer      = "sub-consumer"
 )
 
 func NewSubscriber(
-	js jetstream.JetStream,
+	conn *nats.Conn,
 	sc SubscriberSource,
 	log *slog.Logger,
 	timeout time.Duration,
 ) *Subscriber {
 	return &Subscriber{
-		stream:    js,
+		conn:      conn,
 		commander: sc,
 		log:       log,
 		timeout:   timeout,
@@ -47,6 +49,7 @@ type SubscriberSource interface {
 }
 
 type Subscriber struct {
+	conn      *nats.Conn
 	stream    jetstream.JetStream
 	commander SubscriberSource
 	log       *slog.Logger
@@ -54,6 +57,11 @@ type Subscriber struct {
 }
 
 func (s *Subscriber) Subscribe() error {
+	var err error
+	if s.stream, err = jetstream.New(s.conn); err != nil {
+		return fmt.Errorf("%s: failed to create jetstream: %w", operation, err)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
 
@@ -107,6 +115,14 @@ func (s *Subscriber) subscribe(msg jetstream.Msg) {
 
 	if err != nil {
 		s.log.Error("Failed to delete/save sub", slog.Any("err", err))
+		s.fail(msg.Data())
+	}
+}
+
+func (s *Subscriber) fail(data []byte) {
+	const failTimeout = time.Second * 5
+	if _, err := s.conn.Request(failedSubject, data, failTimeout); err != nil {
+		s.log.Error("Failed to send fail event", slog.Any("err", err))
 	}
 }
 
