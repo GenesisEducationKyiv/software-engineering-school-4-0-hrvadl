@@ -11,7 +11,6 @@ import (
 
 	runner "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/cron"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/cfg"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/gomail"
@@ -103,12 +102,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to nats: %w", operation, err)
 	}
 
-	js, err := jetstream.New(a.nats)
-	if err != nil {
-		return fmt.Errorf("%s: failed to connect to jetstream: %w", operation, err)
-	}
-
-	subSubscriber := subSub.NewSubscriber(js, subSvc, a.log, subTimeout)
+	subSubscriber := subSub.NewSubscriber(a.nats, subSvc, a.log, subTimeout)
 	if err = subSubscriber.Subscribe(); err != nil {
 		return fmt.Errorf("%s: failed to sub to CDC: %w", operation, err)
 	}
