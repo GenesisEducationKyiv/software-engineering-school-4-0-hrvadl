@@ -28,7 +28,7 @@ func NewSubscriber(
 	timeout time.Duration,
 ) *Subscriber {
 	return &Subscriber{
-		conn:      conn,
+		nats:      conn,
 		commander: sc,
 		log:       log,
 		timeout:   timeout,
@@ -49,7 +49,7 @@ type SubscriberSource interface {
 }
 
 type Subscriber struct {
-	conn      *nats.Conn
+	nats      *nats.Conn
 	stream    jetstream.JetStream
 	commander SubscriberSource
 	log       *slog.Logger
@@ -58,7 +58,7 @@ type Subscriber struct {
 
 func (s *Subscriber) Subscribe() error {
 	var err error
-	if s.stream, err = jetstream.New(s.conn); err != nil {
+	if s.stream, err = jetstream.New(s.nats); err != nil {
 		return fmt.Errorf("%s: failed to create jetstream: %w", operation, err)
 	}
 
@@ -121,7 +121,7 @@ func (s *Subscriber) subscribe(msg jetstream.Msg) {
 
 func (s *Subscriber) fail(data []byte) {
 	const failTimeout = time.Second * 5
-	if _, err := s.conn.Request(failedSubject, data, failTimeout); err != nil {
+	if _, err := s.nats.Request(failedSubject, data, failTimeout); err != nil {
 		s.log.Error("Failed to send fail event", slog.Any("err", err))
 	}
 }

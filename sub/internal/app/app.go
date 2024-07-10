@@ -20,7 +20,8 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/validator"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/platform/db"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/server/sub"
+	subGRPC "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/server/sub"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/nats/subscriber/sub"
 )
 
 const operation = "app init"
@@ -60,7 +61,7 @@ func (a *App) MustRun() {
 func (a *App) Run() error {
 	a.srv = grpc.NewServer(grpc.ChainUnaryInterceptor(
 		logger.NewServerGRPCMiddleware(a.log),
-		sub.NewErrorMappingInterceptor(),
+		subGRPC.NewErrorMappingInterceptor(),
 	))
 
 	db, err := db.NewConn(a.cfg.Dsn)
@@ -71,10 +72,15 @@ func (a *App) Run() error {
 	sr := subscriber.NewRepo(db)
 	v := validator.NewStdlib()
 	svc := subs.NewService(sr, v)
-	sub.Register(a.srv, svc, a.log.With(slog.String("source", "sub")))
+	subGRPC.Register(a.srv, svc, a.log.With(slog.String("source", "sub")))
 
 	if a.nats, err = nats.Connect(a.cfg.NatsURL); err != nil {
 		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
+	}
+
+	natsSub := sub.NewSubscriber(a.nats, svc, a.log.With(slog.String("source", "natsSub")))
+	if err = natsSub.Subscribe(); err != nil {
+		return fmt.Errorf("%s: failed to subscribe to NATS topic: %w", operation, err)
 	}
 
 	healthcheck := health.NewServer()
