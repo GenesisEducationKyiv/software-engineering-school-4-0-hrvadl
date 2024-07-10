@@ -13,6 +13,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/server/sub/mocks"
 )
 
@@ -48,7 +49,10 @@ func TestServerSubscribe(t *testing.T) {
 				t.Helper()
 				s, ok := svc.(*mocks.MockService)
 				require.True(t, ok, "Failed to cast service to mock service")
-				s.EXPECT().Subscribe(gomock.Any(), "test@test.com").Times(1).Return(int64(1), nil)
+				s.EXPECT().
+					Subscribe(gomock.Any(), subscriber.Subscriber{Email: "test@test.com"}).
+					Times(1).
+					Return(int64(1), nil)
 			},
 			want:    &emptypb.Empty{},
 			wantErr: false,
@@ -68,7 +72,7 @@ func TestServerSubscribe(t *testing.T) {
 				s, ok := svc.(*mocks.MockService)
 				require.True(t, ok, "Failed to cast service to mock service")
 				s.EXPECT().
-					Subscribe(gomock.Any(), "test@test.com").
+					Subscribe(gomock.Any(), subscriber.Subscriber{Email: "test@test.com"}).
 					Times(1).
 					Return(int64(0), errors.New("failed to subscribe"))
 			},

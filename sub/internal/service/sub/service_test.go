@@ -64,8 +64,8 @@ func TestServiceSubscribe(t *testing.T) {
 		validator func(ctrl *gomock.Controller) Validator
 	}
 	type args struct {
-		ctx  context.Context
-		mail string
+		ctx context.Context
+		sub subscriber.Subscriber
 	}
 	tests := []struct {
 		name    string
@@ -92,8 +92,8 @@ func TestServiceSubscribe(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
-				mail: "mail@gmail.com",
+				ctx: context.Background(),
+				sub: subscriber.Subscriber{Email: "mail@gmail.com"},
 			},
 			want:    1,
 			wantErr: false,
@@ -116,8 +116,8 @@ func TestServiceSubscribe(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
-				mail: "mail@gmail.com",
+				ctx: context.Background(),
+				sub: subscriber.Subscriber{Email: "mail@gmail.com"},
 			},
 			want:    0,
 			wantErr: true,
@@ -140,8 +140,8 @@ func TestServiceSubscribe(t *testing.T) {
 				},
 			},
 			args: args{
-				ctx:  context.Background(),
-				mail: "",
+				ctx: context.Background(),
+				sub: subscriber.Subscriber{},
 			},
 			want:    0,
 			wantErr: true,
@@ -153,7 +153,7 @@ func TestServiceSubscribe(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			s := &Service{repo: tt.fields.repo(ctrl), validator: tt.fields.validator(ctrl)}
-			got, err := s.Subscribe(tt.args.ctx, tt.args.mail)
+			got, err := s.Subscribe(tt.args.ctx, tt.args.sub)
 			if tt.wantErr {
 				require.Error(t, err)
 				return

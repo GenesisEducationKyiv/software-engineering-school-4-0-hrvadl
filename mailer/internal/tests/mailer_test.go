@@ -13,7 +13,6 @@ import (
 
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v3/mailer"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -126,7 +125,7 @@ func TestAppGotSubscribersChangedEvent(t *testing.T) {
 	}
 
 	cfg := mustNewTestConfig(t)
-	nc, js := mustNewNats(t, cfg.NatsURL)
+	nc := mustNewNats(t, cfg.NatsURL)
 	app := app.New(cfg, slog.New(slog.NewTextHandler(os.Stdout, nil)))
 	require.NoError(t, app.Run())
 	mongo, err := db.NewConn(context.Background(), cfg.MongoURL)
@@ -156,7 +155,7 @@ func TestAppGotSubscribersChangedEvent(t *testing.T) {
 			bytes, err := json.Marshal(tt.args.event)
 			require.NoError(t, err)
 
-			_, _ = js.Publish(ctx, subject, bytes)
+			_, err = nc.RequestWithContext(ctx, subject, bytes)
 			require.NoError(t, err)
 
 			subscriber := new(subscriber.Subscriber)
@@ -246,7 +245,7 @@ func TestAppGotExchangeEvent(t *testing.T) {
 	}
 
 	cfg := mustNewTestConfig(t)
-	nc, _ := mustNewNats(t, cfg.NatsURL)
+	nc := mustNewNats(t, cfg.NatsURL)
 	app := app.New(cfg, slog.New(slog.NewTextHandler(os.Stdout, nil)))
 	require.NoError(t, app.Run())
 	mongo, err := db.NewConn(context.Background(), cfg.MongoURL)
@@ -300,26 +299,11 @@ func TestAppGotExchangeEvent(t *testing.T) {
 	}
 }
 
-func mustNewNats(t *testing.T, url string) (*nats.Conn, jetstream.JetStream) {
+func mustNewNats(t *testing.T, url string) *nats.Conn {
 	t.Helper()
 	nc, err := nats.Connect(url)
 	require.NoError(t, err, "Failed to connect to NATS")
-	js, err := jetstream.New(nc)
-	require.NoError(t, err, "Failed to connect to JetStream")
-
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-
-	_, err = js.CreateStream(
-		ctx,
-		jetstream.StreamConfig{
-			Name:     "DebeziumStream",
-			Subjects: []string{"subscribers-changed"},
-		},
-	)
-	require.NoError(t, err, "Failed to create JetStream")
-
-	return nc, js
+	return nc
 }
 
 func mustNewTestConfig(t *testing.T) cfg.Config {

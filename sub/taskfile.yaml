@@ -128,17 +128,16 @@ tasks:
         - CONTAINER_NAME
     cmds:
       - |
-        exit_code=0
-        docker exec -t {{ .CONTAINER_NAME }} mysqladmin ping \
-        -h {{ .SUB_TEST_MYSQL_HOSTNAME }} \
-        -uroot -p{{ .SUB_TEST_MYSQL_ROOT_PASSWORD }} || exit_code=1
-        while [ "$exit_code" -gt 0 ]; do
-            sleep 5
-            exit_code=0
-            docker exec -t {{ .CONTAINER_NAME }} mysqladmin ping \
-            -h {{ .SUB_TEST_MYSQL_HOSTNAME }} \
-            -uroot -p{{ .SUB_TEST_MYSQL_ROOT_PASSWORD }} || exit_code=1
+        function check_health() {
+          docker exec -t {{ .CONTAINER_NAME }} mysqladmin ping -h localhost | grep "mysqld is alive" 
+        }
+
+        until check_health; do
+          echo "mysql is not healthy..."
+          sleep 3
         done
+        echo "mysql is healthy!"
+        sleep 5
 
   cleanup:db:
     desc: "Cleanup test DB"

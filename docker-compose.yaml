@@ -62,7 +62,7 @@ services:
       - converter
 
   db:
-    image: mysql:8.0-debian
+    image: mysql:latest
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       start_period: 5s
