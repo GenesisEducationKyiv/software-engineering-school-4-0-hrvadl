@@ -13,11 +13,6 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/platform/db"
 )
 
-const (
-	deleteEvent = "delete-subscriber"
-	insertEvent = "add-subscriber"
-)
-
 // NewRepo constructs repo with provided sqlx DB connection.
 // NOTE: it expects db connection to be connection MySQL.
 func NewRepo(db *sqlx.DB) *Repo {
@@ -74,7 +69,7 @@ func (r *Repo) save(ctx context.Context, s Subscriber, compensate bool) (int64, 
 		return res.LastInsertId()
 	}
 
-	e := event.Event{Type: insertEvent, Payload: s.Email}
+	e := event.Event{Type: event.Add, Payload: s.Email}
 	es := event.NewRepo(tx)
 	if err := es.Save(ctx, e); err != nil {
 		return 0, fmt.Errorf("failed to save event: %w", err)
@@ -137,7 +132,7 @@ func (r *Repo) deleteByEmail(ctx context.Context, email string, compensate bool)
 		return nil
 	}
 
-	e := event.Event{Type: deleteEvent, Payload: email}
+	e := event.Event{Type: event.Delete, Payload: email}
 	es := event.NewRepo(tx)
 	if err := es.Save(ctx, e); err != nil {
 		return fmt.Errorf("failed to save event: %w", err)

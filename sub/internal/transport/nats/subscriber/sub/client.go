@@ -9,6 +9,7 @@ import (
 
 	"github.com/nats-io/nats.go"
 
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/event"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
 )
 
@@ -55,9 +56,9 @@ func (s *EventSubscriber) Subscribe() error {
 }
 
 type SubscriberChangedEvent struct {
-	ID    int    `json:"id"`
-	Type  string `json:"type"`
-	Email string `json:"payload"`
+	ID    int        `json:"id"`
+	Type  event.Type `json:"type"`
+	Email string     `json:"payload"`
 }
 
 func (s *EventSubscriber) consume(msg *nats.Msg) {
@@ -80,9 +81,9 @@ func (s *EventSubscriber) consume(msg *nats.Msg) {
 	)
 
 	switch in.Type {
-	case deleteEvent:
+	case event.Delete:
 		_, err = s.compensator.Subscribe(ctx, sub)
-	case insertEvent:
+	case event.Add:
 		err = s.compensator.Unsubscribe(ctx, sub)
 	default:
 		s.log.Error("Unknown event", slog.Any("type", in.Type))

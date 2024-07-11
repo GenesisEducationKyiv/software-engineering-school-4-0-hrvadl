@@ -18,8 +18,8 @@ const (
 	failedSubject = "subscribers-changed-failed"
 	stream        = "DebeziumStream"
 	consumer      = "sub-consumer"
-	deleteEvent   = "delete-subscriber"
-	insertEvent   = "add-subscriber"
+	deleteEvent   = "subscriber-deleted"
+	insertEvent   = "subscriber-added"
 )
 
 func NewSubscriber(
@@ -98,6 +98,7 @@ func (s *Subscriber) subscribe(msg *nats.Msg) {
 	if err != nil {
 		s.log.Error("Failed to delete/save sub", slog.Any("err", err))
 		s.fail(msg.Data)
+		return
 	}
 }
 
