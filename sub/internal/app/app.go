@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/ratewatcher"
@@ -21,10 +22,13 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/platform/db"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
 	subGRPC "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/server/sub"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/nats/subscriber/sub"
+	subsub "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/nats/subscriber/sub"
 )
 
-const operation = "app init"
+const (
+	operation     = "app init"
+	outboxTimeout = time.Second * 30
+)
 
 // New constructs new App with provided arguments.
 // NOTE: than neither cfg or log can't be nil or App will panic.
@@ -69,17 +73,26 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to init db: %w", operation, err)
 	}
 
-	sr := subscriber.NewRepo(db)
-	v := validator.NewStdlib()
-	svc := subs.NewService(sr, v)
-	subGRPC.Register(a.srv, svc, a.log.With(slog.String("source", "sub")))
-
 	if a.nats, err = nats.Connect(a.cfg.NatsURL); err != nil {
 		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
 	}
 
-	natsSub := sub.NewSubscriber(a.nats, svc, a.log.With(slog.String("source", "natsSub")))
-	if err = natsSub.Subscribe(); err != nil {
+	sr := subscriber.NewRepo(db)
+	v := validator.NewStdlib()
+	svc := subs.NewService(sr, v)
+
+	subGRPC.Register(
+		a.srv,
+		svc,
+		a.log.With(slog.String("source", "sub")),
+	)
+
+	subsub := subsub.NewSubscriber(
+		a.nats,
+		svc,
+		a.log.With(slog.String("source", "natsSub")),
+	)
+	if err = subsub.Subscribe(); err != nil {
 		return fmt.Errorf("%s: failed to subscribe to NATS topic: %w", operation, err)
 	}
 

@@ -53,7 +53,9 @@ func (s *EventSubscriber) Subscribe() error {
 }
 
 type SubscriberChangedEvent struct {
-	Email   string `json:"email"`
+	ID      int    `json:"id"`
+	Type    string `json:"type"`
+	Email   string `json:"payload"`
 	Deleted bool   `json:"__deleted,string"`
 }
 
@@ -69,7 +71,6 @@ func (s *EventSubscriber) consume(msg *nats.Msg) {
 	log := s.log.With(slog.Bool("deleted", in.Deleted))
 	log.Info("Got event from event bus")
 
-	defer s.ack(msg)
 	ctx, cancel := context.WithTimeout(context.Background(), compensateTimeout)
 	defer cancel()
 
@@ -86,11 +87,21 @@ func (s *EventSubscriber) consume(msg *nats.Msg) {
 
 	if err != nil {
 		log.Error("Failed to compensate transaction", slog.Any("err", err))
+		s.nack(msg)
+		return
 	}
+
+	s.ack(msg)
 }
 
 func (s *EventSubscriber) ack(msg *nats.Msg) {
 	if err := msg.Ack(); err != nil {
 		s.log.Error("Failed to send ack", slog.Any("err", err))
+	}
+}
+
+func (s *EventSubscriber) nack(msg *nats.Msg) {
+	if err := msg.Nak(); err != nil {
+		s.log.Error("Failed to send nack", slog.Any("err", err))
 	}
 }

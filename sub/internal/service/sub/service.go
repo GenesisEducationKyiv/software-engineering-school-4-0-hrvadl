@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
 )
@@ -63,7 +62,6 @@ func (s *Service) Subscribe(ctx context.Context, sub subscriber.Subscriber) (int
 	}
 
 	resp, err := s.repo.Save(ctx, sub)
-	slog.Info("Subscribe", slog.Any("resp", resp), slog.Any("err", err))
 	if err == nil {
 		return resp, nil
 	}

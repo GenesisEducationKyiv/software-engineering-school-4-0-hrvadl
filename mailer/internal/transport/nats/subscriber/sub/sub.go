@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/subscriber"
 )
@@ -50,37 +49,13 @@ type SubscriberSource interface {
 
 type Subscriber struct {
 	nats      *nats.Conn
-	stream    jetstream.JetStream
 	commander SubscriberSource
 	log       *slog.Logger
 	timeout   time.Duration
 }
 
 func (s *Subscriber) Subscribe() error {
-	var err error
-	if s.stream, err = jetstream.New(s.nats); err != nil {
-		return fmt.Errorf("%s: failed to create jetstream: %w", operation, err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
-	defer cancel()
-
-	stream, err := s.stream.Stream(ctx, stream)
-	if err != nil {
-		return fmt.Errorf("%s: failed to subscribe to jetstream: %w", operation, err)
-	}
-
-	cons, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Name:          consumer,
-		AckPolicy:     jetstream.AckExplicitPolicy,
-		DeliverPolicy: jetstream.DeliverNewPolicy,
-		FilterSubject: subject,
-	})
-	if err != nil {
-		return fmt.Errorf("%s: failed to create a consumer: %w", operation, err)
-	}
-
-	if _, err = cons.Consume(s.subscribe); err != nil {
+	if _, err := s.nats.Subscribe(subject, s.subscribe); err != nil {
 		return fmt.Errorf("%s: failed to consume: %w", operation, err)
 	}
 
@@ -92,9 +67,9 @@ type SubscriberChangedEvent struct {
 	Deleted bool   `json:"__deleted,string"`
 }
 
-func (s *Subscriber) subscribe(msg jetstream.Msg) {
+func (s *Subscriber) subscribe(msg *nats.Msg) {
 	var in SubscriberChangedEvent
-	if err := json.Unmarshal(msg.Data(), &in); err != nil {
+	if err := json.Unmarshal(msg.Data, &in); err != nil {
 		s.log.Error("Failed to parse change event", slog.Any("err", err))
 		return
 	}
@@ -115,7 +90,7 @@ func (s *Subscriber) subscribe(msg jetstream.Msg) {
 
 	if err != nil {
 		s.log.Error("Failed to delete/save sub", slog.Any("err", err))
-		s.fail(msg.Data())
+		s.fail(msg.Data)
 	}
 }
 
@@ -126,7 +101,7 @@ func (s *Subscriber) fail(data []byte) {
 	}
 }
 
-func (s *Subscriber) ack(msg jetstream.Msg) {
+func (s *Subscriber) ack(msg *nats.Msg) {
 	if err := msg.Ack(); err != nil {
 		s.log.Error("Failed to send ack", slog.Any("err", err))
 	}
