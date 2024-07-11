@@ -63,7 +63,13 @@ func (r *Repo) Save(ctx context.Context, s Subscriber) (int64, error) {
 	}
 
 	e := event.Event{Type: insertEvent, Payload: s.Email}
-	es := event.NewSaver(tx)
+	es := event.NewRepo(tx)
+	if exist, err := es.GetByPayload(ctx, deleteEvent, s.Email); err == nil && exist != nil {
+		err := es.DeleteByID(ctx, exist.ID)
+		id, idErr := res.LastInsertId()
+		return id, errors.Join(err, idErr)
+	}
+
 	if err := es.Save(ctx, e); err != nil {
 		return 0, fmt.Errorf("failed to save event: %w", err)
 	}
@@ -109,12 +115,16 @@ func (r *Repo) DeleteByEmail(ctx context.Context, email string) error {
 		}
 	}()
 
-	if _, err := r.db.ExecContext(ctx, query, email); err != nil {
+	if _, err := tx.ExecContext(ctx, query, email); err != nil {
 		return fmt.Errorf("failed to delete sub: %w", err)
 	}
 
 	e := event.Event{Type: deleteEvent, Payload: email}
-	es := event.NewSaver(tx)
+	es := event.NewRepo(tx)
+	if exist, err := es.GetByPayload(ctx, insertEvent, email); err == nil && exist != nil {
+		return errors.Join(err, es.DeleteByID(ctx, exist.ID))
+	}
+
 	if err := es.Save(ctx, e); err != nil {
 		return fmt.Errorf("failed to save event: %w", err)
 	}
