@@ -81,9 +81,9 @@ func (s *EventSubscriber) consume(msg *nats.Msg) {
 	)
 
 	switch in.Type {
-	case event.Delete:
+	case event.Deleted:
 		_, err = s.compensator.Subscribe(ctx, sub)
-	case event.Add:
+	case event.Added:
 		err = s.compensator.Unsubscribe(ctx, sub)
 	default:
 		s.log.Error("Unknown event", slog.Any("type", in.Type))

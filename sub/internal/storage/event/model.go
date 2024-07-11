@@ -5,8 +5,8 @@ import "time"
 type Type string
 
 const (
-	Delete = Type("subscriber-deleted")
-	Add    = Type("subscriber-added")
+	Deleted = Type("subscriber-deleted")
+	Added   = Type("subscriber-added")
 )
 
 type Event struct {

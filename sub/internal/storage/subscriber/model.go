@@ -10,7 +10,7 @@ func New(mail string) Subscriber {
 	return Subscriber{
 		Email: mail,
 		event: &event.Event{
-			Type:    event.Add,
+			Type:    event.Added,
 			Payload: mail,
 		},
 	}
@@ -32,6 +32,6 @@ func (s Subscriber) GetEvent() event.Event {
 	}
 
 	return event.Event{
-		Type: event.Delete, Payload: s.Email,
+		Type: event.Deleted, Payload: s.Email,
 	}
 }
