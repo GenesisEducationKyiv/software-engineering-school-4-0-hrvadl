@@ -7,6 +7,7 @@ debezium.source.database.user=
 debezium.source.database.password=
 debezium.source.database.dbname=converter
 debezium.source.database.server.id=1
+debezium.source.table.include.list=events
 
 debezium.source.database.include.list=converter
 debezium.source.publication.autocreate.mode=filtered
@@ -27,7 +28,7 @@ debezium.source.transfroms.unwrap.drop.fields.from.key=true
 debezium.source.transforms.unwrap.delete.handling.mode=rewrite
 debezium.source.transforms.route.type=org.apache.kafka.connect.transforms.RegexRouter
 debezium.source.transforms.route.regex=([^.]+)\\.([^.]+)\\.([^.]+)
-debezium.source.transforms.route.replacement=$3-changed
+debezium.source.transforms.route.replacement=subscribers-changed
 
 
 # SINK

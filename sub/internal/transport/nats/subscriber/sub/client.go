@@ -13,8 +13,10 @@ import (
 )
 
 const (
-	operation = "nats subscription"
-	subject   = "subscribers-changed-failed"
+	operation   = "nats subscription"
+	subject     = "subscribers-changed-failed"
+	deleteEvent = "delete-subscriber"
+	insertEvent = "add-subscriber"
 )
 
 func NewSubscriber(conn *nats.Conn, compensator Compensator, log *slog.Logger) *EventSubscriber {
@@ -53,10 +55,9 @@ func (s *EventSubscriber) Subscribe() error {
 }
 
 type SubscriberChangedEvent struct {
-	ID      int    `json:"id"`
-	Type    string `json:"type"`
-	Email   string `json:"payload"`
-	Deleted bool   `json:"__deleted,string"`
+	ID    int    `json:"id"`
+	Type  string `json:"type"`
+	Email string `json:"payload"`
 }
 
 func (s *EventSubscriber) consume(msg *nats.Msg) {
@@ -68,8 +69,7 @@ func (s *EventSubscriber) consume(msg *nats.Msg) {
 		return
 	}
 
-	log := s.log.With(slog.Bool("deleted", in.Deleted))
-	log.Info("Got event from event bus")
+	s.log.Info("Got event from event bus")
 
 	ctx, cancel := context.WithTimeout(context.Background(), compensateTimeout)
 	defer cancel()
@@ -79,14 +79,18 @@ func (s *EventSubscriber) consume(msg *nats.Msg) {
 		sub = subscriber.Subscriber{Email: in.Email}
 	)
 
-	if in.Deleted {
+	switch in.Type {
+	case deleteEvent:
 		_, err = s.compensator.Subscribe(ctx, sub)
-	} else {
+	case insertEvent:
 		err = s.compensator.Unsubscribe(ctx, sub)
+	default:
+		s.log.Error("Unknown event", slog.Any("type", in.Type))
+		return
 	}
 
 	if err != nil {
-		log.Error("Failed to compensate transaction", slog.Any("err", err))
+		s.log.Error("Failed to compensate transaction", slog.Any("err", err))
 		s.nack(msg)
 		return
 	}

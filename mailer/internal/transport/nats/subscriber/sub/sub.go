@@ -18,6 +18,8 @@ const (
 	failedSubject = "subscribers-changed-failed"
 	stream        = "DebeziumStream"
 	consumer      = "sub-consumer"
+	deleteEvent   = "delete-subscriber"
+	insertEvent   = "add-subscriber"
 )
 
 func NewSubscriber(
@@ -63,8 +65,9 @@ func (s *Subscriber) Subscribe() error {
 }
 
 type SubscriberChangedEvent struct {
-	Email   string `json:"email"`
-	Deleted bool   `json:"__deleted,string"`
+	ID    int    `json:"id"`
+	Type  string `json:"type"`
+	Email string `json:"payload"`
 }
 
 func (s *Subscriber) subscribe(msg *nats.Msg) {
@@ -75,17 +78,21 @@ func (s *Subscriber) subscribe(msg *nats.Msg) {
 	}
 
 	defer s.ack(msg)
-	s.log.Info("Got sub change event from NATS", slog.Bool("deleted", in.Deleted))
+	s.log.Info("Got sub change event from NATS")
 
 	sub := subscriber.Subscriber{Email: in.Email}
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
 
 	var err error
-	if in.Deleted {
+	switch in.Type {
+	case deleteEvent:
 		err = s.commander.Delete(ctx, sub)
-	} else {
+	case insertEvent:
 		err = s.commander.Save(ctx, sub)
+	default:
+		s.log.Error("Unknown event", slog.Any("type", in.Type))
+		return
 	}
 
 	if err != nil {
