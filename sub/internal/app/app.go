@@ -89,7 +89,7 @@ func (a *App) Run() error {
 
 	subsub := subsub.NewSubscriber(
 		a.nats,
-		svc,
+		subs.NewService(subscriber.NewCompensateAdapter(sr), v),
 		a.log.With(slog.String("source", "natsSub")),
 	)
 	if err = subsub.Subscribe(); err != nil {
