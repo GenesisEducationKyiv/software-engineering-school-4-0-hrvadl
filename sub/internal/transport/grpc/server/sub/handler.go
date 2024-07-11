@@ -39,7 +39,7 @@ type Server struct {
 // Subscribe method calls underlying service method and returns an error, in case there was a
 // failure.
 func (s *Server) Subscribe(ctx context.Context, req *pb.SubscribeRequest) (*emptypb.Empty, error) {
-	_, err := s.svc.Subscribe(ctx, subscriber.Subscriber{Email: req.GetEmail()})
+	_, err := s.svc.Subscribe(ctx, subscriber.New(req.GetEmail()))
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (s *Server) Unsubscribe(
 	ctx context.Context,
 	req *pb.UnsubscribeRequest,
 ) (*emptypb.Empty, error) {
-	if err := s.svc.Unsubscribe(ctx, subscriber.Subscriber{Email: req.GetEmail()}); err != nil {
+	if err := s.svc.Unsubscribe(ctx, subscriber.New(req.GetEmail())); err != nil {
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil

@@ -69,9 +69,8 @@ func (r *Repo) save(ctx context.Context, s Subscriber, compensate bool) (int64, 
 		return res.LastInsertId()
 	}
 
-	e := event.Event{Type: event.Add, Payload: s.Email}
 	es := event.NewRepo(tx)
-	if err := es.Save(ctx, e); err != nil {
+	if err := es.Save(ctx, s.GetEvent()); err != nil {
 		return 0, fmt.Errorf("failed to save event: %w", err)
 	}
 
@@ -132,9 +131,9 @@ func (r *Repo) deleteByEmail(ctx context.Context, email string, compensate bool)
 		return nil
 	}
 
-	e := event.Event{Type: event.Delete, Payload: email}
 	es := event.NewRepo(tx)
-	if err := es.Save(ctx, e); err != nil {
+	s := Subscriber{Email: email}
+	if err := es.Save(ctx, s.GetEvent()); err != nil {
 		return fmt.Errorf("failed to save event: %w", err)
 	}
 
