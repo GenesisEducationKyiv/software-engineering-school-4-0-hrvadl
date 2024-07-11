@@ -19,8 +19,10 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/cfg"
 	subs "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/sub"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/service/validator"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/event"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/platform/db"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/transaction"
 	subGRPC "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/grpc/server/sub"
 	subsub "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/transport/nats/subscriber/sub"
 )
@@ -77,9 +79,11 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
 	}
 
-	sr := subscriber.NewRepo(db)
+	tx := transaction.NewManager(db)
+	sr := subscriber.NewRepo()
+	er := event.NewRepo()
 	v := validator.NewStdlib()
-	svc := subs.NewService(sr, v)
+	svc := subs.NewService(subscriber.NewWithEventAdapter(sr, er, tx), v)
 
 	subGRPC.Register(
 		a.srv,
@@ -89,7 +93,7 @@ func (a *App) Run() error {
 
 	subsub := subsub.NewSubscriber(
 		a.nats,
-		subs.NewService(subscriber.NewCompensateAdapter(sr), v),
+		subs.NewService(subscriber.NewCompensateAdapter(sr, tx), v),
 		a.log.With(slog.String("source", "natsSub")),
 	)
 	if err = subsub.Subscribe(); err != nil {
