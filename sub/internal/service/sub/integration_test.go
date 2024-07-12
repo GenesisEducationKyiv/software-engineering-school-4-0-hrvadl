@@ -86,13 +86,13 @@ func TestServiceSubscribe(t *testing.T) {
 
 	dsn := os.Getenv(testDSNEnvKey)
 	require.NotZero(t, dsn, "test DSN can not be empty")
-	db, err := db.NewConn(dsn)
+	dbConn, err := db.NewConn(dsn)
 	require.NoError(t, err, "Failed to connect to db")
 	t.Cleanup(func() {
-		require.NoError(t, db.Close(), "Failed to close DB")
+		require.NoError(t, dbConn.Close(), "Failed to close DB")
 	})
 
-	rs := subscriber.NewRepo(db)
+	rs := subscriber.NewRepo(db.NewWithTx(dbConn))
 	v := validator.NewStdlib()
 	s := NewService(rs, v)
 
@@ -105,7 +105,7 @@ func TestServiceSubscribe(t *testing.T) {
 			}
 
 			t.Cleanup(func() {
-				cleanupSub(t, db, id)
+				cleanupSub(t, dbConn, id)
 			})
 
 			require.NoError(t, err)
@@ -141,13 +141,13 @@ func TestServiceSubscribeTwice(t *testing.T) {
 
 	dsn := os.Getenv(testDSNEnvKey)
 	require.NotZero(t, dsn, "test DSN can not be empty")
-	db, err := db.NewConn(dsn)
+	dbConn, err := db.NewConn(dsn)
 	require.NoError(t, err, "Failed to connect to db")
 	t.Cleanup(func() {
-		require.NoError(t, db.Close(), "Failed to close DB")
+		require.NoError(t, dbConn.Close(), "Failed to close DB")
 	})
 
-	rs := subscriber.NewRepo(db)
+	rs := subscriber.NewRepo(db.NewWithTx(dbConn))
 	v := validator.NewStdlib()
 	s := NewService(rs, v)
 
@@ -155,7 +155,7 @@ func TestServiceSubscribeTwice(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			id, err := s.Subscribe(tt.args.ctx, tt.args.sub)
 			t.Cleanup(func() {
-				cleanupSub(t, db, id)
+				cleanupSub(t, dbConn, id)
 			})
 
 			require.NoError(t, err)

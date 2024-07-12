@@ -9,7 +9,7 @@ import (
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/transaction"
 )
 
-func NewWitTx(db *sqlx.DB) *TxDB {
+func NewWithTx(db *sqlx.DB) *TxDB {
 	return &TxDB{
 		db: db,
 	}

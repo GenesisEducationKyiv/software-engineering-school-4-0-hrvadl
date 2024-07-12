@@ -68,18 +68,18 @@ func TestSave(t *testing.T) {
 
 	dsn := os.Getenv(testDSNEnvKey)
 	require.NotZero(t, dsn, "test DSN can not be empty")
-	db, err := db.NewConn(dsn)
+	dbConn, err := db.NewConn(dsn)
 	require.NoError(t, err, "Failed to connect to test DB")
 	t.Cleanup(func() {
-		require.NoError(t, db.Close(), "Failed to close DB")
+		require.NoError(t, dbConn.Close(), "Failed to close DB")
 	})
-	r := NewRepo(db)
+	r := NewRepo(db.NewWithTx(dbConn))
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			id, err := r.Save(tt.args.ctx, tt.args.sub)
 			t.Cleanup(func() {
-				cleanupSub(t, db, id)
+				cleanupSub(t, dbConn, id)
 			})
 
 			if tt.wantErr {
@@ -120,18 +120,18 @@ func TestSaveSubscriberTwice(t *testing.T) {
 
 	dsn := os.Getenv(testDSNEnvKey)
 	require.NotZero(t, dsn, "test DSN can not be empty")
-	db, err := db.NewConn(dsn)
+	dbConn, err := db.NewConn(dsn)
 	require.NoError(t, err, "Failed to connect to test DB")
 	t.Cleanup(func() {
-		require.NoError(t, db.Close(), "Failed to close DB")
+		require.NoError(t, dbConn.Close(), "Failed to close DB")
 	})
-	r := NewRepo(db)
+	r := NewRepo(db.NewWithTx(dbConn))
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			id, err := r.Save(tt.args.ctx, tt.args.sub)
 			t.Cleanup(func() {
-				cleanupSub(t, db, id)
+				cleanupSub(t, dbConn, id)
 			})
 
 			require.NoError(t, err)
@@ -171,19 +171,19 @@ func TestGetSubscribers(t *testing.T) {
 
 	dsn := os.Getenv(testDSNEnvKey)
 	require.NotZero(t, dsn, "test DSN can not be empty")
-	db, err := db.NewConn(dsn)
+	dbConn, err := db.NewConn(dsn)
 	require.NoError(t, err, "Failed to connect to test DB")
 	t.Cleanup(func() {
-		require.NoError(t, db.Close(), "Failed to close DB")
+		require.NoError(t, dbConn.Close(), "Failed to close DB")
 	})
-	r := NewRepo(db)
+	r := NewRepo(db.NewWithTx(dbConn))
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			want := seed(t, r, 30)
 			t.Cleanup(func() {
 				for _, s := range want {
-					cleanupSub(t, db, s.ID)
+					cleanupSub(t, dbConn, s.ID)
 				}
 			})
 
