@@ -50,7 +50,7 @@ func TestServerSubscribe(t *testing.T) {
 				s, ok := svc.(*mocks.MockService)
 				require.True(t, ok, "Failed to cast service to mock service")
 				s.EXPECT().
-					Subscribe(gomock.Any(), subscriber.New("test@test.com")).
+					Subscribe(gomock.Any(), subscriber.Subscriber{Email: "test@test.com"}).
 					Times(1).
 					Return(int64(1), nil)
 			},
@@ -72,7 +72,7 @@ func TestServerSubscribe(t *testing.T) {
 				s, ok := svc.(*mocks.MockService)
 				require.True(t, ok, "Failed to cast service to mock service")
 				s.EXPECT().
-					Subscribe(gomock.Any(), subscriber.New("test@test.com")).
+					Subscribe(gomock.Any(), subscriber.Subscriber{Email: "test@test.com"}).
 					Times(1).
 					Return(int64(0), errors.New("failed to subscribe"))
 			},

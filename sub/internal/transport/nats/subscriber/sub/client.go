@@ -77,7 +77,7 @@ func (s *EventSubscriber) consume(msg *nats.Msg) {
 
 	var (
 		err error
-		sub = subscriber.New(in.Email)
+		sub = subscriber.Subscriber{Email: in.Email}
 	)
 
 	switch in.Type {
