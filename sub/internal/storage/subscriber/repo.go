@@ -13,27 +13,25 @@ import (
 
 // NewRepo constructs repo with provided sqlx DB connection.
 // NOTE: it expects db connection to be connection MySQL.
-func NewRepo() *Repo {
-	return &Repo{}
+func NewRepo(db *db.TxDB) *Repo {
+	return &Repo{
+		db: db,
+	}
 }
 
 // Repo is a thin abstraction to not do sqlx queries
 // directly in the services. Therefore specific underlying DB could
 // be more easily changed in the future.
-type Repo struct{}
+type Repo struct {
+	db *db.TxDB
+}
 
 // Save method saves subscriber to the repo and then returns
 // newly created ID. Could return an error if email is not valid, or such email
 // already exists.
 func (r *Repo) Save(ctx context.Context, s Subscriber) (int64, error) {
 	const query = "INSERT INTO subscribers (email) VALUES (?)"
-
-	tx, err := transaction.FromContext(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-
-	res, err := tx.ExecContext(ctx, query, s.Email)
+	res, err := r.db.ExecContext(ctx, query, s.Email)
 	if err != nil {
 		var mySQLErr *mysql.MySQLError
 		if errors.As(err, &mySQLErr) && mySQLErr.Number == db.AlreadyExistsErrCode {
@@ -48,13 +46,8 @@ func (r *Repo) Save(ctx context.Context, s Subscriber) (int64, error) {
 
 // Get method gets all subscribers from the DB.
 func (r *Repo) Get(ctx context.Context) ([]Subscriber, error) {
-	tx, err := transaction.FromContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-
 	subscribers := []Subscriber{}
-	if err := tx.SelectContext(ctx, &subscribers, "SELECT * FROM subscribers"); err != nil {
+	if err := r.db.SelectContext(ctx, &subscribers, "SELECT * FROM subscribers"); err != nil {
 		return nil, err
 	}
 
@@ -80,13 +73,7 @@ func (r *Repo) GetByEmail(ctx context.Context, email string) (*Subscriber, error
 // DeleteByEmail method gets subscriber from the DB by his email.
 func (r *Repo) DeleteByEmail(ctx context.Context, email string) error {
 	const query = "DELETE FROM subscribers WHERE email = ?"
-
-	tx, err := transaction.FromContext(ctx)
-	if err != nil {
-		return fmt.Errorf(" failed to create transaction: %w", err)
-	}
-
-	if _, err := tx.ExecContext(ctx, query, email); err != nil {
+	if _, err := r.db.ExecContext(ctx, query, email); err != nil {
 		return fmt.Errorf("failed to delete sub: %w", err)
 	}
 

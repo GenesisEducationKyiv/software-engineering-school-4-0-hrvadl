@@ -70,7 +70,7 @@ func (a *App) Run() error {
 		subGRPC.NewErrorMappingInterceptor(),
 	))
 
-	db, err := db.NewConn(a.cfg.Dsn)
+	dbConn, err := db.NewConn(a.cfg.Dsn)
 	if err != nil {
 		return fmt.Errorf("%s: failed to init db: %w", operation, err)
 	}
@@ -79,8 +79,9 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
 	}
 
-	tx := transaction.NewManager(db)
-	sr := subscriber.NewRepo()
+	tx := transaction.NewManager(dbConn)
+	dbTx := db.NewWitTx(dbConn)
+	sr := subscriber.NewRepo(dbTx)
 	er := event.NewRepo()
 	v := validator.NewStdlib()
 	svc := subs.NewService(subscriber.NewWithEventAdapter(sr, er, tx), v)
