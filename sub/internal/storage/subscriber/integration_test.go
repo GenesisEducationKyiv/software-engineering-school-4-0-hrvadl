@@ -531,6 +531,242 @@ func TestWithEventAdapterGet(t *testing.T) {
 	}
 }
 
+func TestWithCompensationAdapterSave(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		sub Subscriber
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Should save subscriber and create event",
+			args: args{
+				ctx: context.Background(),
+				sub: Subscriber{
+					Email: "test@test1.com",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should not save subscriber and create event when timed out",
+			args: args{
+				ctx: newImmediateCtx(),
+				sub: Subscriber{
+					Email: "test@test1.com",
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	dbConn, err := db.NewConn(mustGetEnv(t, testDSNEnvKey))
+	require.NoError(t, err)
+	txDB := db.NewWithTx(dbConn)
+	repo := NewRepo(txDB)
+	tx := transaction.NewManager(dbConn)
+
+	c := &CompensateAdapter{
+		repo: repo,
+		tx:   tx,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Cleanup(func() {
+				cleanup(t, txDB)
+			})
+
+			_, err := c.Save(tt.args.ctx, tt.args.sub)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+			defer cancel()
+
+			var sub Subscriber
+			err = txDB.GetContext(
+				ctx,
+				&sub,
+				"SELECT * FROM subscribers WHERE email = (?)",
+				tt.args.sub.Email,
+			)
+			require.NoError(t, err)
+			require.Equal(t, sub.Email, tt.args.sub.Email)
+
+			var event event.Event
+			err = txDB.GetContext(
+				ctx,
+				&event,
+				"SELECT * FROM events WHERE payload = (?) AND type = 'subscriber-added'",
+				tt.args.sub.Email,
+			)
+			require.Error(t, err)
+			require.ErrorIs(t, err, sql.ErrNoRows)
+		})
+	}
+}
+
+func TestWithCompensationAdapterDeleteByEmail(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		email string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		setup   func(t *testing.T, db *db.Tx)
+		wantErr bool
+	}{
+		{
+			name: "Shoould delete subscriber by email",
+			args: args{
+				ctx:   context.Background(),
+				email: "test@test.com",
+			},
+			setup: func(t *testing.T, db *db.Tx) {
+				t.Helper()
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+				defer cancel()
+				_, err := db.ExecContext(
+					ctx,
+					"INSERT INTO subscribers (email) VALUES (?)",
+					"test@test.com",
+				)
+				require.NoError(t, err)
+			},
+			wantErr: false,
+		},
+	}
+
+	dbConn, err := db.NewConn(mustGetEnv(t, testDSNEnvKey))
+	require.NoError(t, err)
+	txDB := db.NewWithTx(dbConn)
+	repo := NewRepo(txDB)
+	tx := transaction.NewManager(dbConn)
+
+	c := &CompensateAdapter{
+		repo: repo,
+		tx:   tx,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Cleanup(func() {
+				cleanup(t, txDB)
+			})
+			tt.setup(t, txDB)
+			err := c.DeleteByEmail(tt.args.ctx, tt.args.email)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+			defer cancel()
+
+			var sub Subscriber
+			err = txDB.GetContext(
+				ctx,
+				&sub,
+				"SELECT * FROM subscribers WHERE email = (?)",
+				tt.args.email,
+			)
+			require.Error(t, err)
+			require.ErrorIs(t, err, sql.ErrNoRows)
+
+			var event event.Event
+			err = txDB.GetContext(
+				ctx,
+				&event,
+				"SELECT * FROM events WHERE payload = (?) AND type = 'subscriber-deleted'",
+				tt.args.email,
+			)
+			require.Error(t, err)
+			require.ErrorIs(t, err, sql.ErrNoRows)
+		})
+	}
+}
+
+func TestWithCompensationAdapterGetByEmail(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		email string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		setup   func(t *testing.T, db *db.Tx)
+		want    *Subscriber
+		wantErr bool
+	}{
+		{
+			name: "Should get subscriber correctly",
+			args: args{
+				ctx:   context.Background(),
+				email: "test@test.com",
+			},
+			setup: func(t *testing.T, db *db.Tx) {
+				t.Helper()
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+				defer cancel()
+				_, err := db.ExecContext(
+					ctx,
+					"INSERT INTO subscribers (email) VALUES (?)",
+					"test@test.com",
+				)
+				require.NoError(t, err)
+			},
+			want: &Subscriber{
+				Email: "test@test.com",
+			},
+		},
+		{
+			name: "Should return error when subscriber does not exist",
+			args: args{
+				ctx:   context.Background(),
+				email: "test@test.com",
+			},
+			setup: func(*testing.T, *db.Tx) {
+			},
+			wantErr: true,
+		},
+	}
+
+	dbConn, err := db.NewConn(mustGetEnv(t, testDSNEnvKey))
+	require.NoError(t, err)
+	txDB := db.NewWithTx(dbConn)
+	repo := NewRepo(txDB)
+	tx := transaction.NewManager(dbConn)
+
+	c := &CompensateAdapter{
+		repo: repo,
+		tx:   tx,
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Cleanup(func() {
+				cleanup(t, txDB)
+			})
+			tt.setup(t, txDB)
+			got, err := c.GetByEmail(tt.args.ctx, tt.args.email)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tt.want.Email, got.Email)
+		})
+	}
+}
+
 func seed(t *testing.T, repo *Repo, amount int) []Subscriber {
 	t.Helper()
 
