@@ -1,6 +1,6 @@
 //go:build !integration
 
-package subscriber
+package event
 
 import (
 	"testing"
@@ -11,17 +11,21 @@ import (
 )
 
 func TestNewRepo(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		db *db.Tx
 	}
-	t.Parallel()
 	tests := []struct {
 		name string
 		args args
+		want *Repo
 	}{
 		{
-			name: "Should create repo with correct db conn",
+			name: "Should construct new repo with correct parameters",
 			args: args{
+				db: &db.Tx{},
+			},
+			want: &Repo{
 				db: &db.Tx{},
 			},
 		},
@@ -31,7 +35,7 @@ func TestNewRepo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := NewRepo(tt.args.db)
-			require.NotNil(t, got)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

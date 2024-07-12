@@ -82,7 +82,7 @@ func (a *App) Run() error {
 	tx := transaction.NewManager(dbConn)
 	dbTx := db.NewWithTx(dbConn)
 	sr := subscriber.NewRepo(dbTx)
-	er := event.NewRepo()
+	er := event.NewRepo(dbTx)
 	v := validator.NewStdlib()
 	svc := subs.NewService(subscriber.NewWithEventAdapter(sr, er, tx), v)
 

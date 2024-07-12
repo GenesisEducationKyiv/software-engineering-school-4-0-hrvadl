@@ -13,7 +13,7 @@ import (
 
 // NewRepo constructs repo with provided sqlx DB connection.
 // NOTE: it expects db connection to be connection MySQL.
-func NewRepo(db *db.TxDB) *Repo {
+func NewRepo(db *db.Tx) *Repo {
 	return &Repo{
 		db: db,
 	}
@@ -23,7 +23,7 @@ func NewRepo(db *db.TxDB) *Repo {
 // directly in the services. Therefore specific underlying DB could
 // be more easily changed in the future.
 type Repo struct {
-	db *db.TxDB
+	db *db.Tx
 }
 
 // Save method saves subscriber to the repo and then returns
