@@ -34,3 +34,11 @@ func (d *Tx) GetContext(ctx context.Context, dest any, query string, args ...any
 func (d *Tx) SelectContext(ctx context.Context, dest any, query string, args ...any) error {
 	return d.db.SelectContext(ctx, dest, query, args...)
 }
+
+func (d *Tx) NamedExecContext(ctx context.Context, query string, arg any) (sql.Result, error) {
+	tx, err := transaction.FromContext(ctx)
+	if err != nil {
+		return d.db.NamedExecContext(ctx, query, arg)
+	}
+	return tx.NamedExecContext(ctx, query, arg)
+}
