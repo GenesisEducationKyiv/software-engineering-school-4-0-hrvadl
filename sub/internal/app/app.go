@@ -69,9 +69,8 @@ func (a *App) MustRun() {
 // described above steps failed.
 func (a *App) Run() error {
 	promGRPCMetrics := promGRPC.NewServerMetrics(
-		promGRPC.WithServerCounterOptions(promGRPC.WithConstLabels(
-			map[string]string{"svc": "sub"},
-		)),
+		promGRPC.WithServerCounterOptions(),
+		promGRPC.WithServerHandlingTimeHistogram(),
 	)
 
 	a.srv = grpc.NewServer(grpc.ChainUnaryInterceptor(
