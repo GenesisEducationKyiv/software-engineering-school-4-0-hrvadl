@@ -29,8 +29,8 @@ import (
 const operation = "app init"
 
 const (
-	sendHours   = 7
-	sendMinutes = 52
+	sendHours   = 8
+	sendMinutes = 25
 )
 
 // New constructs new App with provided arguments.
@@ -94,7 +94,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to nats: %w", operation, err)
 	}
 
-	subSubscriber := subSub.NewSubscriber(a.nats, subSvc, a.log, subTimeout)
+	subSubscriber := subSub.NewSubscriber(a.nats, subSvc, a.log, a.cfg.ConnectTimeout)
 	if err = subSubscriber.Subscribe(); err != nil {
 		return fmt.Errorf("%s: failed to sub to CDC: %w", operation, err)
 	}
