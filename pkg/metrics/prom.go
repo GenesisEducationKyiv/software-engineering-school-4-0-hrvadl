@@ -14,7 +14,7 @@ const (
 	operation   = "metrics"
 )
 
-func NewServer(addr, prefix string) *Prom {
+func NewServer(addr string) *Prom {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	srv := &http.Server{
