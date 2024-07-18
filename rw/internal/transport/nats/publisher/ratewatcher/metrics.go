@@ -1,18 +1,27 @@
 package ratewatcher
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-var rateProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
-	Name: "rate_sent_total",
-	Help: "The total number of sent rate events",
-}, []string{"status"})
-
 const (
 	statusFailed = "failed"
 	statusOK     = "ok"
+)
+
+var (
+	rateProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "rate_sent_total",
+		Help: "The total number of sent rate events",
+	}, []string{"status"})
+
+	rateTime = promauto.NewSummary(prometheus.SummaryOpts{
+		Name: "rate_sent_seconds",
+		Help: "The total time of sent rate events",
+	})
 )
 
 func NewWithMetrics(doer Doer) *MetricsDecorator {
@@ -31,11 +40,18 @@ type MetricsDecorator struct {
 }
 
 func (md *MetricsDecorator) Do() error {
-	if err := md.doer.Do(); err != nil {
-		rateProcessed.With(prometheus.Labels{"status": statusFailed}).Inc()
-		return err
+	var (
+		now    = time.Now()
+		status = statusOK
+	)
+
+	err := md.doer.Do()
+	if err != nil {
+		status = statusFailed
 	}
 
-	rateProcessed.With(prometheus.Labels{"status": statusOK}).Inc()
-	return nil
+	rateTime.Observe(time.Since(now).Seconds())
+	rateProcessed.With(prometheus.Labels{"status": status}).Inc()
+
+	return err
 }
