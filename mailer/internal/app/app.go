@@ -29,8 +29,8 @@ import (
 const operation = "app init"
 
 const (
-	sendHours   = 8
-	sendMinutes = 25
+	sendHours   = 12
+	sendMinutes = 0o0
 )
 
 // New constructs new App with provided arguments.
@@ -118,7 +118,7 @@ func (a *App) Run() error {
 		a.log,
 	)
 	job := runner.NewDailyJob(sendHours, sendMinutes, a.log)
-	job.Do(adp)
+	job.Do(cron.NewWithMetrics(adp))
 
 	return nil
 }
