@@ -122,7 +122,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to start listener on port %s: %w", operation, a.cfg.Port, err)
 	}
 
-	a.metrics = metrics.NewServer(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort), "sub")
+	a.metrics = metrics.NewServer(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
 	if err := a.metrics.Register(promGRPCMetrics); err != nil {
 		return fmt.Errorf("%s: %w", operation, err)
 	}
