@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	runner "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/cron"
 	"github.com/nats-io/nats.go"
@@ -31,15 +30,8 @@ import (
 const operation = "app init"
 
 const (
-	sendHours   = 10
-	sendMinutes = 15
-)
-
-const (
-	mailerTimeout = time.Second * 5
-	mongoTimeout  = time.Second * 10
-	subTimeout    = time.Second * 5
-	cronTimeout   = time.Second * 5
+	sendHours   = 7
+	sendMinutes = 52
 )
 
 // New constructs new App with provided arguments.
@@ -75,7 +67,7 @@ func (a *App) MustRun() {
 // starts listening on the provided ports. Could return an error if any of
 // described above steps failed.
 func (a *App) Run() error {
-	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), a.cfg.ConnectTimeout)
 	defer cancel()
 
 	var err error
@@ -108,7 +100,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to jetstream: %w", operation, err)
 	}
 
-	subSubscriber := subSub.NewSubscriber(js, subSvc, a.log, subTimeout)
+	subSubscriber := subSub.NewSubscriber(js, subSvc, a.log, a.cfg.ConnectTimeout)
 	if err = subSubscriber.Subscribe(); err != nil {
 		return fmt.Errorf("%s: failed to sub to CDC: %w", operation, err)
 	}
@@ -117,13 +109,20 @@ func (a *App) Run() error {
 		a.nats,
 		rateSvc,
 		a.log.With(slog.String("source", "mailerSrv")),
-		mailerTimeout,
+		a.cfg.ConnectTimeout,
 	)
 	if err = m.Subscribe(); err != nil {
 		return fmt.Errorf("%s: failed to subscribe: %w", operation, err)
 	}
 
-	adp := cron.NewAdapter(rateSvc, subSvc, mailSvc, formatter.NewWithDate(), cronTimeout, a.log)
+	adp := cron.NewAdapter(
+		rateSvc,
+		subSvc,
+		mailSvc,
+		formatter.NewWithDate(),
+		a.cfg.ConnectTimeout,
+		a.log,
+	)
 	job := runner.NewDailyJob(sendHours, sendMinutes, a.log)
 	job.Do(adp)
 
@@ -144,7 +143,7 @@ func (a *App) GracefulStop() {
 func (a *App) Stop() {
 	a.nats.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), mongoTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), a.cfg.ConnectTimeout)
 	defer cancel()
 
 	if err := a.db.Close(ctx); err != nil {
