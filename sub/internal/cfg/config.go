@@ -18,6 +18,7 @@ type Config struct {
 	LogLevel        string `env:"SUB_LOG_LEVEL,required,notEmpty"`
 	NatsURL         string `env:"NATS_URL,required,notEmpty"`
 	Host            string `env:"SUB_HOST"`
+	PrometheusPort  string `env:"PROMETHEUS_PORT"`
 }
 
 // Must is a handly wrapper around return results from
