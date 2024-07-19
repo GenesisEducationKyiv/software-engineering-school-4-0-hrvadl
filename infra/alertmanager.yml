@@ -1,0 +1,36 @@
+global:
+  smtp_from: "youngwwad@gmail.com"
+  smtp_smarthost: smtp.gmail.com:587
+  smtp_auth_identity: "youngwwad@gmail.com"
+  smtp_auth_username: "youngwwad@gmail.com"
+  smtp_auth_password_file: "/etc/alertmanager/password.txt"
+
+route:
+  receiver: admin
+  group_by: [category]
+  group_wait: 30s
+  routes:
+    - match:
+        app_type: linux
+      receiver: sysadm
+    - match:
+        app_type: go
+      receiver: dev
+
+receivers:
+  - name: admin
+    email_configs:
+      - to: "v.l.grashchenko@student.khai.edu"
+  - name: sysadm
+    email_configs:
+      - to: "hrvadleo@gmail.com"
+  - name: dev
+    email_configs:
+      - to: "hrvadleo@gmail.com"
+
+inhibit_rules:
+  - source_match:
+      severity: "critical"
+    target_match:
+      severity: "warning"
+    equal: ["app_type", "category"]
