@@ -4,16 +4,15 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 var (
-	eventProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
+	EventProcessed = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "event_sent_total",
 		Help: "The total number of sent events",
 	}, []string{"status", "event"})
 
-	eventTime = promauto.NewSummaryVec(prometheus.SummaryOpts{
+	EventTime = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name: "event_sent_seconds",
 		Help: "The total time of events",
 	}, []string{"event"})
@@ -23,6 +22,10 @@ const (
 	statusFailed = "failed"
 	statusOK     = "ok"
 )
+
+func GetMetrics() []prometheus.Collector {
+	return []prometheus.Collector{EventProcessed, EventTime}
+}
 
 func NewWithMetrics(doer Doer, event string) *MetricsDecorator {
 	return &MetricsDecorator{
@@ -47,8 +50,8 @@ func (md *MetricsDecorator) Do() error {
 		status = statusFailed
 	}
 
-	eventTime.WithLabelValues(md.event).Observe(time.Since(now).Seconds())
-	eventProcessed.With(prometheus.Labels{"status": status}).Inc()
+	EventTime.WithLabelValues(md.event).Observe(time.Since(now).Seconds())
+	EventProcessed.With(prometheus.Labels{"status": status}).Inc()
 
 	return err
 }
