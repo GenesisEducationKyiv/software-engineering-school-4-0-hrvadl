@@ -7,12 +7,12 @@ import (
 )
 
 var (
-	EventProcessed = prometheus.NewCounterVec(prometheus.CounterOpts{
+	eventProcessed = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "event_sent_total",
 		Help: "The total number of sent events",
 	}, []string{"status", "event"})
 
-	EventTime = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+	eventTime = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name: "event_sent_seconds",
 		Help: "The total time of events",
 	}, []string{"event"})
@@ -24,7 +24,7 @@ const (
 )
 
 func GetMetrics() []prometheus.Collector {
-	return []prometheus.Collector{EventProcessed, EventTime}
+	return []prometheus.Collector{eventProcessed, eventTime}
 }
 
 func NewWithMetrics(doer Doer, event string) *MetricsDecorator {
@@ -50,8 +50,8 @@ func (md *MetricsDecorator) Do() error {
 		status = statusFailed
 	}
 
-	EventTime.WithLabelValues(md.event).Observe(time.Since(now).Seconds())
-	EventProcessed.With(prometheus.Labels{"status": status, "event": md.event}).Inc()
+	eventTime.WithLabelValues(md.event).Observe(time.Since(now).Seconds())
+	eventProcessed.With(prometheus.Labels{"status": status, "event": md.event}).Inc()
 
 	return err
 }
