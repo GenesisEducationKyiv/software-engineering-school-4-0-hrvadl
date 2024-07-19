@@ -117,8 +117,12 @@ func (a *App) Run() error {
 		publishTimeout,
 	)
 
-	rwNatsPublisher := rwnats.NewWithMetrics(rwNatsAdapter)
+	a.metrics = metrics.NewServer(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
+	if err = a.metrics.Register(promGRPCMetrics); err != nil {
+		return fmt.Errorf("%s: %w", operation, err)
+	}
 
+	rwNatsPublisher := cron.NewWithMetrics(rwNatsAdapter, "rate")
 	job := cron.NewJob(publishInterval, a.log.With(slog.String("source", "rateWatchCron")))
 	job.Do(rwNatsPublisher)
 
@@ -132,11 +136,6 @@ func (a *App) Run() error {
 	listener, err := net.Listen("tcp", net.JoinHostPort("", a.cfg.Port))
 	if err != nil {
 		return fmt.Errorf("%s: failed to listen on tcp port %s: %w", operation, a.cfg.Port, err)
-	}
-
-	a.metrics = metrics.NewServer(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
-	if err := a.metrics.Register(promGRPCMetrics); err != nil {
-		return fmt.Errorf("%s: %w", operation, err)
 	}
 
 	go func() {

@@ -1,5 +1,7 @@
 github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240718122333-c0d0d1154740 h1:HmcYmWi0jpxX1YbGsjJq0NByy1a1xUPwZpTVDkxsKi4=
 github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240718122333-c0d0d1154740/go.mod h1:Rtef2NeRz7TLMo9ZkkAk98EJ0KLrU+doipFTzCj4DzQ=
+github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240719090520-16ace7860e25 h1:u0aQyRbLPjQuycB8nnJZDIybvUBbjN3G6O9HC2hxxZY=
+github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240719090520-16ace7860e25/go.mod h1:xV1JhA2VK+VP7CfCYKpFZKG/CZ+ka6kernynT5oXScg=
 github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos v0.0.0-20240705175733-f2199adbf914 h1:Pmwa9aUNlGJOWhPUQRTCmaWALRe1rliBp29tqs5jjYg=
 github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos v0.0.0-20240705175733-f2199adbf914/go.mod h1:FavXpNMI3SjAet81BOO77D1Cko9l1Bpo3qBcoQYVDGo=
 github.com/agiledragon/gomonkey/v2 v2.11.0 h1:5oxSgA+tC1xuGsrIorR+sYiziYltmJyEZ9qA25b6l5U=
