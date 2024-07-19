@@ -1,11 +1,5 @@
-github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240705175733-f2199adbf914 h1:7jgFX2OYsiaPR4AEHuNz44pG8X9Wp9SNq74pYzl/sXQ=
-github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240705175733-f2199adbf914/go.mod h1:Rtef2NeRz7TLMo9ZkkAk98EJ0KLrU+doipFTzCj4DzQ=
-github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240719090520-16ace7860e25 h1:u0aQyRbLPjQuycB8nnJZDIybvUBbjN3G6O9HC2hxxZY=
-github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240719090520-16ace7860e25/go.mod h1:xV1JhA2VK+VP7CfCYKpFZKG/CZ+ka6kernynT5oXScg=
-github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240719094208-9620d24ae007 h1:62ji3Z67YKwkV+4BD1KAFJSjQ7Kk5zzHwhi4M1JQuAo=
-github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240719094208-9620d24ae007/go.mod h1:xV1JhA2VK+VP7CfCYKpFZKG/CZ+ka6kernynT5oXScg=
-github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240719095241-7b34b2f1bd5d h1:IuyouHTo7PfiSTBP9fzoNmk6KBd6F49p9mT2yLl7Rgk=
-github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240719095241-7b34b2f1bd5d/go.mod h1:xV1JhA2VK+VP7CfCYKpFZKG/CZ+ka6kernynT5oXScg=
+github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240719102837-03852dd10e0d h1:InB43hVBiM73vnJV4q8/+huCWvTVNxMQSxTkin8Rd6w=
+github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240719102837-03852dd10e0d/go.mod h1:RBdRzOqbVbODG3LsbkhlImH2a8Pqv3gLxU70okKoarU=
 github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos v0.0.0-20240705175733-f2199adbf914 h1:Pmwa9aUNlGJOWhPUQRTCmaWALRe1rliBp29tqs5jjYg=
 github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos v0.0.0-20240705175733-f2199adbf914/go.mod h1:FavXpNMI3SjAet81BOO77D1Cko9l1Bpo3qBcoQYVDGo=
 github.com/agiledragon/gomonkey/v2 v2.11.0 h1:5oxSgA+tC1xuGsrIorR+sYiziYltmJyEZ9qA25b6l5U=
@@ -117,10 +111,8 @@ golang.org/x/tools v0.1.12/go.mod h1:hNGJHUnrk76NpqgfD5Aqm5Crs+Hm0VOH/i9J2+nxYbc
 golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d h1:vU5i/LfpvrRCpgM/VPfJLg5KjxD3E+hfT1SH+d9zLwg=
 golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d/go.mod h1:aiJjzUbINMkxbQROHiO6hDPo2LHcIPhhQsa9DLh0yGk=
 golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
-google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8 h1:W5Xj/70xIA4x60O/IFyXivR5MGqblAb8R3w26pnD6No=
-google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8/go.mod h1:vPrPUTsDCYxXWjP7clS81mZ6/803D8K4iM9Ma27VKas=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20240617180043-68d350f18fd4 h1:Di6ANFilr+S60a4S61ZM00vLdw0IrQOSMS2/6mrnOU0=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20240617180043-68d350f18fd4/go.mod h1:Ue6ibwXGpU+dqIcODieyLOcgj7z8+IcskoNIgZxtrFY=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 h1:BwIjyKYGsK9dMCBOorzRri8MQwmi7mT9rGHsCEinZkA=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094/go.mod h1:Ue6ibwXGpU+dqIcODieyLOcgj7z8+IcskoNIgZxtrFY=
 google.golang.org/grpc v1.64.0 h1:KH3VH9y/MgNQg1dE7b3XfVK0GsPSIzJwdF617gUSbvY=
 google.golang.org/grpc v1.64.0/go.mod h1:oxjF8E3FBnjp+/gVFYdWacaLDx9na1aqy9oovLpxQYg=
 google.golang.org/protobuf v1.34.2 h1:6xV6lTsCfpGD21XK49h7MhtcApnLqkfYgPcdHftf6hg=
