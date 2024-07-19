@@ -113,6 +113,10 @@ func (a *App) Run() error {
 	}
 
 	a.metrics = metrics.NewServer(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
+	if err := a.metrics.Register(runner.GetMetrics()...); err != nil {
+		return fmt.Errorf("%s: failed to register metrics: %w", operation, err)
+	}
+
 	adp := cron.NewAdapter(
 		rateSvc,
 		subSvc,

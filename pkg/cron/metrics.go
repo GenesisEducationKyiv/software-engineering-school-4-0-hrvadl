@@ -51,7 +51,7 @@ func (md *MetricsDecorator) Do() error {
 	}
 
 	EventTime.WithLabelValues(md.event).Observe(time.Since(now).Seconds())
-	EventProcessed.With(prometheus.Labels{"status": status}).Inc()
+	EventProcessed.With(prometheus.Labels{"status": status, "event": md.event}).Inc()
 
 	return err
 }

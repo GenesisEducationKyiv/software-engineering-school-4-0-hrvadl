@@ -118,7 +118,8 @@ func (a *App) Run() error {
 	)
 
 	a.metrics = metrics.NewServer(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
-	if err = a.metrics.Register(promGRPCMetrics); err != nil {
+	m := append(cron.GetMetrics(), promGRPCMetrics)
+	if err = a.metrics.Register(m...); err != nil {
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 
