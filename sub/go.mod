@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240706092349-f47195980d00
-	github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos v0.0.0-20240706092349-f47195980d00
+	github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos v0.0.0-20240721132502-88e7db453600
 	github.com/caarlos0/env/v11 v11.1.0
 	github.com/fdaines/arch-go v1.5.4
 	github.com/go-sql-driver/mysql v1.8.1

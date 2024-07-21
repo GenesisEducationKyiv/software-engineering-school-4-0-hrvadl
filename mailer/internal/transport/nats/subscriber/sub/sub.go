@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/sub"
 	"github.com/nats-io/nats.go"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/subscriber"
@@ -65,9 +66,9 @@ func (s *Subscriber) Subscribe() error {
 }
 
 type SubscriberChangedEvent struct {
-	ID    int    `json:"id"`
-	Type  string `json:"type"`
-	Email string `json:"payload"`
+	ID      int    `json:"id"`
+	Type    string `json:"type"`
+	Payload []byte `json:"payload"`
 }
 
 func (s *Subscriber) subscribe(msg *nats.Msg) {
@@ -80,7 +81,14 @@ func (s *Subscriber) subscribe(msg *nats.Msg) {
 	defer s.ack(msg)
 	s.log.Info("Got sub change event from NATS")
 
-	sub := subscriber.Subscriber{Email: in.Email}
+	var event pb.SubscriptionAddedEvent
+	if err := json.Unmarshal(in.Payload, &event); err != nil {
+		s.log.Error("Failed to unmarshall payload", slog.Any("err", err))
+		s.fail(msg.Data)
+		return
+	}
+
+	sub := subscriber.Subscriber{Email: event.GetEmail()}
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
 
