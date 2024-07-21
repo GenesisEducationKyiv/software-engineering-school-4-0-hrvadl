@@ -111,6 +111,10 @@ service SubService {
   }
 }
 
+message SubscriptionAddedEvent {
+  string email = 1;
+}
+
 message SubscribeRequest {
   string email = 1 [(google.api.field_behavior) = REQUIRED];
 }
