@@ -93,7 +93,7 @@ func TestRepoSave(t *testing.T) {
 }
 
 func newImmediateCtx() context.Context {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	return ctx
 }
