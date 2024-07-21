@@ -35,11 +35,5 @@ func (c *CompensateAdapter) DeleteByEmail(ctx context.Context, email string) err
 }
 
 func (c *CompensateAdapter) GetByEmail(ctx context.Context, email string) (*Subscriber, error) {
-	var sub *Subscriber
-	err := c.tx.WithTx(ctx, func(ctx context.Context) error {
-		var err error
-		sub, err = c.repo.GetByEmail(ctx, email)
-		return err
-	})
-	return sub, err
+	return c.repo.GetByEmail(ctx, email)
 }
