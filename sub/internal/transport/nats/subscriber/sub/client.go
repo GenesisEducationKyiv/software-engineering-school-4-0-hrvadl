@@ -87,6 +87,7 @@ func (s *EventSubscriber) consume(msg *nats.Msg) {
 		err = s.compensator.Unsubscribe(ctx, sub)
 	default:
 		s.log.Error("Unknown event", slog.Any("type", in.Type))
+		s.ack(msg)
 		return
 	}
 
