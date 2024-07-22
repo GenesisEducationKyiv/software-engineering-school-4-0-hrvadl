@@ -82,8 +82,8 @@ func (s *Service) Unsubscribe(ctx context.Context, sub subscriber.Subscriber) er
 		return ErrInvalidEmail
 	}
 
-	if sub, _ := s.repo.GetByEmail(ctx, sub.Email); sub == nil {
-		return ErrNotExists
+	if sub, err := s.repo.GetByEmail(ctx, sub.Email); sub == nil {
+		return errors.Join(ErrNotExists, err)
 	}
 
 	if err := s.repo.DeleteByEmail(ctx, sub.Email); err != nil {

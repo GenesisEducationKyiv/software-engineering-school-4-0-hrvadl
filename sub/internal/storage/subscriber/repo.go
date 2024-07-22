@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/go-sql-driver/mysql"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/platform/db"
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/transaction"
 )
 
 // NewRepo constructs repo with provided sqlx DB connection.
@@ -57,13 +57,8 @@ func (r *Repo) Get(ctx context.Context) ([]Subscriber, error) {
 // GetByEmail method gets subscriber from the DB by his email.
 func (r *Repo) GetByEmail(ctx context.Context, email string) (*Subscriber, error) {
 	const query = "SELECT * FROM subscribers WHERE email = ? LIMIT 1"
-	tx, err := transaction.FromContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-
-	subscriber := Subscriber{}
-	if err := tx.GetContext(ctx, &subscriber, query, email); err != nil {
+	var subscriber Subscriber
+	if err := r.db.GetContext(ctx, &subscriber, query, email); err != nil {
 		return nil, err
 	}
 
@@ -74,6 +69,7 @@ func (r *Repo) GetByEmail(ctx context.Context, email string) (*Subscriber, error
 func (r *Repo) DeleteByEmail(ctx context.Context, email string) error {
 	const query = "DELETE FROM subscribers WHERE email = ?"
 	if _, err := r.db.ExecContext(ctx, query, email); err != nil {
+		slog.Error("Failed to delete sub", slog.Any("err", err))
 		return fmt.Errorf("failed to delete sub: %w", err)
 	}
 
