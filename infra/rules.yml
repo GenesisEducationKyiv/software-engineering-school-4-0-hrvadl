@@ -1,4 +1,38 @@
 groups:
+  - name: app-alert-rules
+    rules:
+      - alert: SubMisbehaving
+        expr: sum by(grpc_code) (rate(grpc_server_handled_total{grpc_method=~"Unsubscribe|Subscribe", grpc_code!~"OK|Unknown"}[1m])) > 15
+        labels:
+          app_type: sub
+          severity: critical
+          category: server
+        annotations:
+          summary: Sub svc misbehaving
+      - alert: RateWatcherMisbehaving
+        expr: sum by(grpc_code) (rate(grpc_server_handled_total{grpc_method="GetRate", grpc_code!~"OK|Unknown"}[1m])) > 15
+        labels:
+          app_type: rw
+          severity: critical
+          category: server
+        annotations:
+          summary: RateWatcher misbehaving
+      - alert: RateWatcherEventMisbehaving
+        expr: sum by(status) (rate(event_sent_total{event="rate", status="failed"}[5m])) > 0
+        labels:
+          app_type: rw
+          severity: critical
+          category: server
+        annotations:
+          summary: RateWatcher misbehaving
+      - alert: MailerMisbehaving
+        expr: sum by(status) (rate(event_sent_total{event="mail", status="failed"}[5m])) > 0
+        labels:
+          app_type: mailer
+          severity: critical
+          category: server
+        annotations:
+          summary: Mailer misbehaving
   - name: node-alert-rules
     rules:
       - alert: NodeExporterDown

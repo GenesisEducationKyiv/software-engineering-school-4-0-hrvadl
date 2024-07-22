@@ -14,7 +14,13 @@ route:
         app_type: linux
       receiver: sysadm
     - match:
-        app_type: go
+        app_type: rw
+      receiver: dev
+    - match:
+        app_type: sub
+      receiver: dev
+    - match:
+        app_type: mailer
       receiver: dev
 
 receivers:
