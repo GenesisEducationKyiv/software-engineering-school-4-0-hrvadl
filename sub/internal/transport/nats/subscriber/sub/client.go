@@ -7,7 +7,9 @@ import (
 	"log/slog"
 	"time"
 
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/sub"
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/event"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
@@ -56,9 +58,9 @@ func (s *EventSubscriber) Subscribe() error {
 }
 
 type SubscriberChangedEvent struct {
-	ID    int        `json:"id"`
-	Type  event.Type `json:"type"`
-	Email string     `json:"payload"`
+	ID      int        `json:"id"`
+	Type    event.Type `json:"type"`
+	Payload string     `json:"payload"`
 }
 
 func (s *EventSubscriber) consume(msg *nats.Msg) {
@@ -75,9 +77,15 @@ func (s *EventSubscriber) consume(msg *nats.Msg) {
 	ctx, cancel := context.WithTimeout(context.Background(), compensateTimeout)
 	defer cancel()
 
+	var ev pb.SubscriptionAddedEvent
+	if err := protojson.Unmarshal([]byte(in.Payload), &ev); err != nil {
+		s.log.Error("Failed to parse change event", slog.Any("err", err))
+		return
+	}
+
 	var (
 		err error
-		sub = subscriber.Subscriber{Email: in.Email}
+		sub = subscriber.Subscriber{Email: ev.GetEmail()}
 	)
 
 	switch in.Type {

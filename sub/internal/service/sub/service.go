@@ -70,7 +70,7 @@ func (s *Service) Subscribe(ctx context.Context, sub subscriber.Subscriber) (int
 		return 0, ErrAlreadyExists
 	}
 
-	return 0, ErrFailedToSave
+	return 0, errors.Join(ErrFailedToSave, err)
 }
 
 // Unsubscribe method accepts context and subscriber's mail.

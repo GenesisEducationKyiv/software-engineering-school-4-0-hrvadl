@@ -9,6 +9,7 @@ import (
 
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/sub"
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/subscriber"
 )
@@ -68,27 +69,30 @@ func (s *Subscriber) Subscribe() error {
 type SubscriberChangedEvent struct {
 	ID      int    `json:"id"`
 	Type    string `json:"type"`
-	Payload []byte `json:"payload"`
+	Payload string `json:"payload"`
 }
 
 func (s *Subscriber) subscribe(msg *nats.Msg) {
 	var in SubscriberChangedEvent
 	if err := json.Unmarshal(msg.Data, &in); err != nil {
-		s.log.Error("Failed to parse change event", slog.Any("err", err))
+		s.log.Error(
+			"Failed to parse change event",
+			slog.Any("err", err),
+			slog.String("data", string(msg.Data)),
+		)
 		return
 	}
 
 	defer s.ack(msg)
 	s.log.Info("Got sub change event from NATS")
 
-	var event pb.SubscriptionAddedEvent
-	if err := json.Unmarshal(in.Payload, &event); err != nil {
-		s.log.Error("Failed to unmarshall payload", slog.Any("err", err))
-		s.fail(msg.Data)
+	var ev pb.SubscriptionAddedEvent
+	if err := protojson.Unmarshal([]byte(in.Payload), &ev); err != nil {
+		s.log.Error("Failed to parse change event", slog.Any("err", err))
 		return
 	}
 
-	sub := subscriber.Subscriber{Email: event.GetEmail()}
+	sub := subscriber.Subscriber{Email: ev.GetEmail()}
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
 

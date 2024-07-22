@@ -2,10 +2,11 @@ package subscriber
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
 
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/sub"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/event"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/transaction"
@@ -28,10 +29,9 @@ type WithEventAdapter struct {
 func (c *WithEventAdapter) Save(ctx context.Context, sub Subscriber) (int64, error) {
 	var id int64
 	err := c.tx.WithTx(ctx, func(ctx context.Context) error {
-		subAdded := &pb.SubscriptionAddedEvent{Email: sub.Email}
-		payload, err := json.Marshal(subAdded)
+		payload, err := protojson.Marshal(&pb.SubscriptionAddedEvent{Email: sub.Email})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to marshall proto: %w", err)
 		}
 
 		evErr := c.events.Save(ctx, event.Event{Payload: payload, Type: event.Added})
@@ -43,10 +43,9 @@ func (c *WithEventAdapter) Save(ctx context.Context, sub Subscriber) (int64, err
 
 func (c *WithEventAdapter) DeleteByEmail(ctx context.Context, email string) error {
 	return c.tx.WithTx(ctx, func(ctx context.Context) error {
-		subDeleted := &pb.SubscriptionAddedEvent{Email: email}
-		payload, err := json.Marshal(subDeleted)
+		payload, err := protojson.Marshal(&pb.SubscriptionAddedEvent{Email: email})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to marshall proto: %w", err)
 		}
 
 		evErr := c.events.Save(ctx, event.Event{Payload: payload, Type: event.Deleted})
