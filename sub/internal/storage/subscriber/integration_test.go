@@ -273,11 +273,10 @@ func TestWithEventAdapterSave(t *testing.T) {
 			err = txDB.GetContext(
 				ctx,
 				&event,
-				"SELECT * FROM events WHERE payload = (?) AND type = 'subscriber-added'",
-				tt.args.sub.Email,
+				"SELECT * FROM events WHERE type = 'subscriber-added'",
 			)
 			require.NoError(t, err)
-			require.Equal(t, event.Payload, tt.args.sub.Email)
+			require.Contains(t, string(event.Payload), tt.args.sub.Email)
 		})
 	}
 }
@@ -294,7 +293,7 @@ func TestWithEventAdapterDeleteByEmail(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Shoould delete subscriber by email",
+			name: "Should delete subscriber by email",
 			args: args{
 				ctx:   context.Background(),
 				email: "test@test.com",
@@ -356,11 +355,10 @@ func TestWithEventAdapterDeleteByEmail(t *testing.T) {
 			err = txDB.GetContext(
 				ctx,
 				&event,
-				"SELECT * FROM events WHERE payload = (?) AND type = 'subscriber-deleted'",
-				tt.args.email,
+				"SELECT * FROM events WHERE type = 'subscriber-deleted'",
 			)
 			require.NoError(t, err)
-			require.Equal(t, tt.args.email, event.Payload)
+			require.Contains(t, string(event.Payload), tt.args.email)
 		})
 	}
 }
@@ -603,8 +601,7 @@ func TestWithCompensationAdapterSave(t *testing.T) {
 			err = txDB.GetContext(
 				ctx,
 				&event,
-				"SELECT * FROM events WHERE payload = (?) AND type = 'subscriber-added'",
-				tt.args.sub.Email,
+				"SELECT * FROM events WHERE type = 'subscriber-added'",
 			)
 			require.Error(t, err)
 			require.ErrorIs(t, err, sql.ErrNoRows)
@@ -624,7 +621,7 @@ func TestWithCompensationAdapterDeleteByEmail(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Shoould delete subscriber by email",
+			name: "Should delete subscriber by email",
 			args: args{
 				ctx:   context.Background(),
 				email: "test@test.com",
@@ -684,8 +681,7 @@ func TestWithCompensationAdapterDeleteByEmail(t *testing.T) {
 			err = txDB.GetContext(
 				ctx,
 				&event,
-				"SELECT * FROM events WHERE payload = (?) AND type = 'subscriber-deleted'",
-				tt.args.email,
+				"SELECT * FROM events WHERE type = 'subscriber-deleted'",
 			)
 			require.Error(t, err)
 			require.ErrorIs(t, err, sql.ErrNoRows)

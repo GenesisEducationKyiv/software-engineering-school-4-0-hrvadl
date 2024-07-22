@@ -12,10 +12,13 @@ import (
 	"testing"
 	"time"
 
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/sub"
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/app"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/cfg"
@@ -40,15 +43,17 @@ func TestCompensate(t *testing.T) {
 
 	tests := []struct {
 		name  string
+		mail  string
 		event sub.SubscriberChangedEvent
 		setup func(t *testing.T, db *sqlx.DB)
 		want  *subscriber.Subscriber
 	}{
 		{
 			name: "Should not compensate deletion with insertion when row is already there",
+			mail: "mail@mail.com",
 			event: sub.SubscriberChangedEvent{
-				Type:  event.Deleted,
-				Email: "mail@mail.com",
+				Type:    event.Deleted,
+				Payload: protoMarshall(t, &pb.SubscriptionAddedEvent{Email: "mail@mail.com"}),
 			},
 			setup: cleanup,
 			want: &subscriber.Subscriber{
@@ -57,9 +62,10 @@ func TestCompensate(t *testing.T) {
 		},
 		{
 			name: "Should compensate deletion with insertion",
+			mail: "mail@mail.com",
 			event: sub.SubscriberChangedEvent{
-				Type:  event.Deleted,
-				Email: "mail@mail.com",
+				Type:    event.Deleted,
+				Payload: protoMarshall(t, &pb.SubscriptionAddedEvent{Email: "mail@mail.com"}),
 			},
 			setup: cleanup,
 			want: &subscriber.Subscriber{
@@ -68,9 +74,10 @@ func TestCompensate(t *testing.T) {
 		},
 		{
 			name: "Should not compensate insertion with deletion when no row available",
+			mail: "mail@mail.com",
 			event: sub.SubscriberChangedEvent{
-				Type:  event.Added,
-				Email: "mail@mail.com",
+				Type:    event.Added,
+				Payload: protoMarshall(t, &pb.SubscriptionAddedEvent{Email: "mail@mail.com"}),
 			},
 			setup: func(*testing.T, *sqlx.DB) {
 			},
@@ -78,13 +85,14 @@ func TestCompensate(t *testing.T) {
 		},
 		{
 			name: "Should compensate insertion with deletion",
+			mail: "mail@mail.com",
 			event: sub.SubscriberChangedEvent{
-				Type:  event.Added,
-				Email: "mail@mail.com",
+				Type:    event.Added,
+				Payload: protoMarshall(t, &pb.SubscriptionAddedEvent{Email: "mail@mail.com"}),
 			},
 			setup: func(t *testing.T, db *sqlx.DB) {
 				t.Helper()
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 				defer cancel()
 				_, err := db.ExecContext(
 					ctx,
@@ -135,7 +143,7 @@ func TestCompensate(t *testing.T) {
 				ctx,
 				&got,
 				"SELECT * FROM subscribers WHERE email = (?)",
-				tt.event.Email,
+				tt.mail,
 			)
 
 			if tt.want == nil {
@@ -178,4 +186,10 @@ func checkPortBusy(t *testing.T, host, port string) {
 	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), timeout)
 	require.NoError(t, err)
 	require.NotEmpty(t, conn)
+}
+
+func protoMarshall(t *testing.T, data protoreflect.ProtoMessage) string {
+	d, err := protojson.Marshal(data)
+	require.NoError(t, err)
+	return string(d)
 }

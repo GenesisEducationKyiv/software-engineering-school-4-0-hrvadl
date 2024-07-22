@@ -32,7 +32,7 @@ func TestRepoSave(t *testing.T) {
 				ctx: context.Background(),
 				event: Event{
 					Type:    Deleted,
-					Payload: "test@test.com",
+					Payload: []byte("test@test.com"),
 				},
 			},
 		},
@@ -43,7 +43,7 @@ func TestRepoSave(t *testing.T) {
 				ctx: context.Background(),
 				event: Event{
 					Type:    Added,
-					Payload: "test@test.com",
+					Payload: []byte("test@test.com"),
 				},
 			},
 		},
@@ -54,7 +54,7 @@ func TestRepoSave(t *testing.T) {
 				ctx: newImmediateCtx(),
 				event: Event{
 					Type:    Added,
-					Payload: "test@test.com",
+					Payload: []byte("test@test.com"),
 				},
 			},
 		},

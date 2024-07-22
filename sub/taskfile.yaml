@@ -130,6 +130,7 @@ tasks:
       - task: healthcheck:db
         vars:
           CONTAINER_NAME: "{{ .CONTAINER_NAME }}"
+          PASSWORD: "{{ .SUB_TEST_MYSQL_ROOT_PASSWORD }}"
 
   create:nats:
     requires:
@@ -165,10 +166,11 @@ tasks:
     requires:
       vars:
         - CONTAINER_NAME
+        - PASSWORD
     cmds:
       - |
         function check_health() {
-          docker exec -t {{ .CONTAINER_NAME }} mysqladmin ping -h localhost | grep "mysqld is alive" 
+          docker exec -t {{ .CONTAINER_NAME }} mysqladmin ping -p{{ .PASSWORD }} -h localhost | grep "mysqld is alive" 
         }
 
         until check_health; do
@@ -176,7 +178,7 @@ tasks:
           sleep 3
         done
         echo "mysql is healthy!"
-        sleep 5
+        sleep 3
 
   cleanup:nats:
     desc: "Cleanup test NATS"
