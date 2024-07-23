@@ -41,6 +41,22 @@ groups:
           category: server
         annotations:
           summary: Sub service is slow. (10% of requests is slower than 250ms)
+      - alert: RateWatcherSlow
+        expr: event_sent_seconds_sum{event="rate"} / event_sent_seconds_count{event="rate"} > 1
+        labels:
+          app_type: rw
+          severity: critical
+          category: server
+        annotations:
+          summary: Rate Watcher service is slow. (Average of request takes longer than second)
+      - alert: MailerSlow
+        expr: event_sent_seconds_sum{event="mail"} / event_sent_seconds_count{event="mail"} > 1
+        labels:
+          app_type: mailer
+          severity: critical
+          category: server
+        annotations:
+          summary: Mailer service is slow. (Average of request takes longer than second)
   - name: node-alert-rules
     rules:
       - alert: NodeExporterDown
