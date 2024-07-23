@@ -33,6 +33,14 @@ groups:
           category: server
         annotations:
           summary: Mailer misbehaving
+      - alert: SubServiceSlow
+        expr: (100.0 - (sum(rate(grpc_server_handling_seconds_bucket{job="sub",grpc_type="unary",le="0.25"}[5m])) by (grpc_method) / sum(rate(grpc_server_handling_seconds_count{job="sub",grpc_type="unary"}[5m])) by (grpc_method)) * 100.0) > 10
+        labels:
+          app_type: sub
+          severity: critical
+          category: server
+        annotations:
+          summary: Sub service is slow. (10% of requests is slower than 250ms)
   - name: node-alert-rules
     rules:
       - alert: NodeExporterDown
