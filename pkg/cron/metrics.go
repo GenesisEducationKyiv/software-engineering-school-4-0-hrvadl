@@ -12,9 +12,10 @@ var (
 		Help: "The total number of sent events",
 	}, []string{"status", "event"})
 
-	eventTime = prometheus.NewSummaryVec(prometheus.SummaryOpts{
-		Name: "event_sent_seconds",
-		Help: "The total time of events",
+	eventTime = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "event_sent_seconds",
+		Help:    "The total time of events",
+		Buckets: []float64{0.05, 0.1, 0.25, 0.5, 1},
 	}, []string{"event"})
 )
 
