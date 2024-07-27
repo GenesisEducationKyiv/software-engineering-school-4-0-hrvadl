@@ -52,7 +52,7 @@ type App struct {
 	log     *slog.Logger
 	nats    *nats.Conn
 	db      *db.Conn
-	metrics *metrics.Prom
+	metrics *metrics.Engine
 }
 
 // MustRun is a wrapper around App.Run() function which could be handly
@@ -112,7 +112,11 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to subscribe: %w", operation, err)
 	}
 
-	a.metrics = metrics.NewServer(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
+	a.metrics, err = metrics.NewEngine(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
+	if err != nil {
+		return fmt.Errorf("%s: failed to create metrics engine: %w", operation, err)
+	}
+
 	if err := a.metrics.Register(runner.GetMetrics()...); err != nil {
 		return fmt.Errorf("%s: failed to register metrics: %w", operation, err)
 	}

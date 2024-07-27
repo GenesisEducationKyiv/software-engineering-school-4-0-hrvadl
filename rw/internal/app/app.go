@@ -52,7 +52,7 @@ type App struct {
 	log     *slog.Logger
 	srv     *grpc.Server
 	nats    *nats.Conn
-	metrics *metrics.Prom
+	metrics *metrics.Engine
 }
 
 // MustRun is a wrapper around App.Run() function which could be handly
@@ -117,7 +117,11 @@ func (a *App) Run() error {
 		publishTimeout,
 	)
 
-	a.metrics = metrics.NewServer(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
+	a.metrics, err = metrics.NewEngine(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
+	if err != nil {
+		return fmt.Errorf("%s: failed to create metrics engine: %w", operation, err)
+	}
+
 	m := append(cron.GetMetrics(), promGRPCMetrics)
 	if err = a.metrics.Register(m...); err != nil {
 		return fmt.Errorf("%s: %w", operation, err)

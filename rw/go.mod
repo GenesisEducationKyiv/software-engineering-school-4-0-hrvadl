@@ -3,7 +3,7 @@ module github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/rw
 go 1.22.0
 
 require (
-	github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240723175725-83f6b6504969
+	github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg v0.0.0-20240727135632-c04eccaf6c10
 	github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos v0.0.0-20240722132746-f527d3fc51e4
 	github.com/caarlos0/env/v11 v11.1.0
 	github.com/fdaines/arch-go v1.5.4
