@@ -14,13 +14,7 @@ const (
 	operation   = "metrics"
 )
 
-var requestTimeDefault = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-	Name:    "request_seconds",
-	Help:    "The total time of seconds spent waiting for request",
-	Buckets: []float64{0.05, 0.1, 0.25, 0.5, 1},
-}, []string{"type", "path", "status"})
-
-func NewEngine(addr string) (*Engine, error) {
+func NewEngine(addr string) *Engine {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	srv := &http.Server{
@@ -29,25 +23,11 @@ func NewEngine(addr string) (*Engine, error) {
 		ReadHeaderTimeout: readTimeout,
 	}
 
-	engine := &Engine{srv: srv}
-	if err := engine.registerDefaultMetrics(); err != nil {
-		return nil, err
-	}
-
-	return engine, nil
+	return &Engine{srv: srv}
 }
-
-type Labels = map[string]string
 
 type Engine struct {
 	srv *http.Server
-}
-
-// CollectRequestTimeWithLabels is experimental approach (alternative to decorators) proposed by my mentor.
-// I'm just playing with it to understant which approach suites better to
-// use in my application.
-func (p *Engine) CollectRequestTimeWithLabels(l Labels, t time.Duration) {
-	requestTimeDefault.With(l).Observe(t.Seconds())
 }
 
 func (p *Engine) Register(c ...prometheus.Collector) error {
@@ -68,11 +48,4 @@ func (p *Engine) Start() error {
 
 func (p *Engine) Stop() error {
 	return p.srv.Close()
-}
-
-func (p *Engine) registerDefaultMetrics() error {
-	if err := prometheus.Register(requestTimeDefault); err != nil {
-		return fmt.Errorf("%s: failed to register collector: %w", operation, err)
-	}
-	return nil
 }
