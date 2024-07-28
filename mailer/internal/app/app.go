@@ -112,11 +112,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to subscribe: %w", operation, err)
 	}
 
-	a.metrics, err = metrics.NewEngine(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
-	if err != nil {
-		return fmt.Errorf("%s: failed to create metrics engine: %w", operation, err)
-	}
-
+	a.metrics = metrics.NewEngine(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
 	if err := a.metrics.Register(runner.GetMetrics()...); err != nil {
 		return fmt.Errorf("%s: failed to register metrics: %w", operation, err)
 	}

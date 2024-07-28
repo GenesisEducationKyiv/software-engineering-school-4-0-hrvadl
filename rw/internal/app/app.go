@@ -117,11 +117,7 @@ func (a *App) Run() error {
 		publishTimeout,
 	)
 
-	a.metrics, err = metrics.NewEngine(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
-	if err != nil {
-		return fmt.Errorf("%s: failed to create metrics engine: %w", operation, err)
-	}
-
+	a.metrics = metrics.NewEngine(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
 	m := append(cron.GetMetrics(), promGRPCMetrics)
 	if err = a.metrics.Register(m...); err != nil {
 		return fmt.Errorf("%s: %w", operation, err)

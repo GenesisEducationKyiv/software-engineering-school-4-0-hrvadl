@@ -2,19 +2,22 @@ package event
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/platform/db"
 )
 
-func NewRepo(db *db.Tx) *Repo {
+func NewRepo(db DataSource) *Repo {
 	return &Repo{
 		db: db,
 	}
 }
 
+type DataSource interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
 type Repo struct {
-	db *db.Tx
+	db DataSource
 }
 
 func (s *Repo) Save(ctx context.Context, event Event) error {

@@ -49,7 +49,7 @@ func New(cfg cfg.Config, log *slog.Logger) *App {
 type App struct {
 	cfg     cfg.Config
 	log     *slog.Logger
-	metrics *metrics.Prom
+	metrics *metrics.Engine
 	srv     *grpc.Server
 	nats    *nats.Conn
 }
@@ -89,9 +89,9 @@ func (a *App) Run() error {
 	}
 
 	tx := transaction.NewManager(dbConn)
-	dbTx := db.NewWithTx(dbConn)
-	sr := subscriber.NewRepo(dbTx)
-	er := event.NewRepo(dbTx)
+	dbWithMetrics := db.NewWithMetrics(db.NewWithTx(dbConn))
+	sr := subscriber.NewRepo(dbWithMetrics.WithTableName("subscribers"))
+	er := event.NewRepo(dbWithMetrics.WithTableName("events"))
 	v := validator.NewStdlib()
 	svc := subs.NewService(subscriber.NewWithEventAdapter(sr, er, tx), v)
 
@@ -122,8 +122,9 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to start listener on port %s: %w", operation, a.cfg.Port, err)
 	}
 
-	a.metrics = metrics.NewServer(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
-	if err := a.metrics.Register(promGRPCMetrics); err != nil {
+	allMetrics := append(dbWithMetrics.GetMetrics(), promGRPCMetrics)
+	a.metrics = metrics.NewEngine(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
+	if err := a.metrics.Register(allMetrics...); err != nil {
 		return fmt.Errorf("%s: %w", operation, err)
 	}
 

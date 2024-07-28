@@ -2,6 +2,7 @@ package subscriber
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -13,17 +14,23 @@ import (
 
 // NewRepo constructs repo with provided sqlx DB connection.
 // NOTE: it expects db connection to be connection MySQL.
-func NewRepo(db *db.Tx) *Repo {
+func NewRepo(db DataSource) *Repo {
 	return &Repo{
 		db: db,
 	}
+}
+
+type DataSource interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	GetContext(ctx context.Context, dest any, query string, args ...any) error
+	SelectContext(ctx context.Context, dest any, query string, args ...any) error
 }
 
 // Repo is a thin abstraction to not do sqlx queries
 // directly in the services. Therefore specific underlying DB could
 // be more easily changed in the future.
 type Repo struct {
-	db *db.Tx
+	db DataSource
 }
 
 // Save method saves subscriber to the repo and then returns
