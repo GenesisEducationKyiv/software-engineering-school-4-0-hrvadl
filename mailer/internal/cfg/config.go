@@ -29,6 +29,7 @@ type Config struct {
 	MongoURL string `env:"MONGO_URL,required,notEmpty"`
 
 	ConnectTimeout time.Duration `env:"MAILER_TIMEOUT"`
+	PrometheusPort string        `env:"PROMETHEUS_PORT,required,notEmpty"`
 }
 
 // Must is a handly wrapper around return results from

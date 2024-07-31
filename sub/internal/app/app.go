@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/metrics"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/ratewatcher"
+	promGRPC "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -45,10 +47,11 @@ func New(cfg cfg.Config, log *slog.Logger) *App {
 // db connections, and GRPC server/clients. Could return an error if any
 // of described above steps failed.
 type App struct {
-	cfg  cfg.Config
-	log  *slog.Logger
-	srv  *grpc.Server
-	nats *nats.Conn
+	cfg     cfg.Config
+	log     *slog.Logger
+	metrics *metrics.Engine
+	srv     *grpc.Server
+	nats    *nats.Conn
 }
 
 // MustRun is a wrapper around App.Run() function which could be handly
@@ -65,9 +68,15 @@ func (a *App) MustRun() {
 // starts listening on the provided ports. Could return an error if any of
 // described above steps failed.
 func (a *App) Run() error {
+	promGRPCMetrics := promGRPC.NewServerMetrics(
+		promGRPC.WithServerCounterOptions(),
+		promGRPC.WithServerHandlingTimeHistogram(),
+	)
+
 	a.srv = grpc.NewServer(grpc.ChainUnaryInterceptor(
 		logger.NewServerGRPCMiddleware(a.log),
 		subGRPC.NewErrorMappingInterceptor(),
+		promGRPCMetrics.UnaryServerInterceptor(),
 	))
 
 	dbConn, err := db.NewConn(a.cfg.Dsn)
@@ -80,9 +89,9 @@ func (a *App) Run() error {
 	}
 
 	tx := transaction.NewManager(dbConn)
-	dbTx := db.NewWithTx(dbConn)
-	sr := subscriber.NewRepo(dbTx)
-	er := event.NewRepo(dbTx)
+	dbWithMetrics := db.NewWithMetrics(db.NewWithTx(dbConn))
+	sr := subscriber.NewRepo(dbWithMetrics.WithTableName("subscribers"))
+	er := event.NewRepo(dbWithMetrics.WithTableName("events"))
 	v := validator.NewStdlib()
 	svc := subs.NewService(subscriber.NewWithEventAdapter(sr, er, tx), v)
 
@@ -113,6 +122,18 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to start listener on port %s: %w", operation, a.cfg.Port, err)
 	}
 
+	allMetrics := append(dbWithMetrics.GetMetrics(), promGRPCMetrics)
+	a.metrics = metrics.NewEngine(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
+	if err := a.metrics.Register(allMetrics...); err != nil {
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+
+	go func() {
+		if err := a.metrics.Start(); err != nil {
+			a.log.Error("Failed to serve metrics", slog.Any("err", err))
+		}
+	}()
+
 	return a.srv.Serve(l)
 }
 
@@ -124,7 +145,14 @@ func (a *App) GracefulStop() {
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT)
 	signal := <-ch
 	a.log.Info("Received stop signal. Terminating...", slog.Any("signal", signal))
+	a.Stop()
+	a.log.Info("Successfully terminated server. Bye!")
+}
+
+func (a *App) Stop() {
 	a.srv.Stop()
 	a.nats.Close()
-	a.log.Info("Successfully terminated server. Bye!")
+	if err := a.metrics.Stop(); err != nil {
+		a.log.Error("Failed to stop metrics srv", slog.Any("err", err))
+	}
 }

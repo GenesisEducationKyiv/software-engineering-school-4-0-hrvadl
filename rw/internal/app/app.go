@@ -11,7 +11,9 @@ import (
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/cron"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/metrics"
 	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/ratewatcher"
+	promGRPC "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -46,10 +48,11 @@ func New(cfg cfg.Config, log *slog.Logger) *App {
 // db connections, and GRPC server/clients. Could return an error if any
 // of described above steps failed.
 type App struct {
-	cfg  cfg.Config
-	log  *slog.Logger
-	srv  *grpc.Server
-	nats *nats.Conn
+	cfg     cfg.Config
+	log     *slog.Logger
+	srv     *grpc.Server
+	nats    *nats.Conn
+	metrics *metrics.Engine
 }
 
 // MustRun is a wrapper around App.Run() function which could be handly
@@ -66,8 +69,14 @@ func (a *App) MustRun() {
 // starts listening on the provided ports. Could return an error if any of
 // described above steps failed
 func (a *App) Run() error {
+	promGRPCMetrics := promGRPC.NewServerMetrics(
+		promGRPC.WithServerCounterOptions(),
+		promGRPC.WithServerHandlingTimeHistogram(),
+	)
+
 	a.srv = grpc.NewServer(grpc.ChainUnaryInterceptor(
 		logger.NewServerGRPCMiddleware(a.log),
+		promGRPCMetrics.UnaryServerInterceptor(),
 	))
 
 	rateapiRw := rates.NewWithLogger(
@@ -103,11 +112,18 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to nats server: %w", operation, err)
 	}
 
-	rwNatsPublisher := rwnats.NewCronJobAdapter(
+	rwNatsAdapter := rwnats.NewCronJobAdapter(
 		rwnats.NewClient(a.nats, rateSvc, a.log.With(slog.String("source", "rateWatchNats"))),
 		publishTimeout,
 	)
 
+	a.metrics = metrics.NewEngine(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
+	m := append(cron.GetMetrics(), promGRPCMetrics)
+	if err = a.metrics.Register(m...); err != nil {
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+
+	rwNatsPublisher := cron.NewWithMetrics(rwNatsAdapter, "rate")
 	job := cron.NewJob(publishInterval, a.log.With(slog.String("source", "rateWatchCron")))
 	job.Do(rwNatsPublisher)
 
@@ -122,6 +138,12 @@ func (a *App) Run() error {
 	if err != nil {
 		return fmt.Errorf("%s: failed to listen on tcp port %s: %w", operation, a.cfg.Port, err)
 	}
+
+	go func() {
+		if err := a.metrics.Start(); err != nil {
+			a.log.Error("Failed to serve metrics", slog.Any("err", err))
+		}
+	}()
 
 	return a.srv.Serve(listener)
 }

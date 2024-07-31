@@ -18,6 +18,8 @@ type Config struct {
 	LogLevel                             string `env:"EXCHANGE_LOG_LEVEL,required,notEmpty"`
 	Port                                 string `env:"EXCHANGE_PORT,required,notEmpty"`
 	NatsURL                              string `env:"NATS_URL,required,notEmpty"`
+	Host                                 string `env:"EXCHANGE_HOST"`
+	PrometheusPort                       string `env:"PROMETHEUS_PORT,required,notEmpty"`
 }
 
 // Must is a handly wrapper around return results from
