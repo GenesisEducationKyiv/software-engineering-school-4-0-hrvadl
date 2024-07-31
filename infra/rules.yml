@@ -1,0 +1,91 @@
+groups:
+  - name: app-alert-rules
+    rules:
+      - alert: SubMisbehaving
+        expr: sum by(grpc_code) (rate(grpc_server_handled_total{grpc_method=~"Unsubscribe|Subscribe", grpc_code!~"OK|Unknown"}[1m])) > 15
+        labels:
+          app_type: sub
+          severity: critical
+          category: server
+        annotations:
+          summary: Sub svc misbehaving
+      - alert: RateWatcherMisbehaving
+        expr: sum by(grpc_code) (rate(grpc_server_handled_total{grpc_method="GetRate", grpc_code!~"OK|Unknown"}[1m])) > 15
+        labels:
+          app_type: rw
+          severity: critical
+          category: server
+        annotations:
+          summary: RateWatcher misbehaving
+      - alert: RateWatcherEventMisbehaving
+        expr: sum by(status) (rate(event_sent_total{event="rate", status="failed"}[5m])) > 0
+        labels:
+          app_type: rw
+          severity: critical
+          category: server
+        annotations:
+          summary: RateWatcher misbehaving
+      - alert: MailerMisbehaving
+        expr: sum by(status) (rate(event_sent_total{event="mail", status="failed"}[5m])) > 0
+        labels:
+          app_type: mailer
+          severity: critical
+          category: server
+        annotations:
+          summary: Mailer misbehaving
+      - alert: SubServiceSlow
+        expr: (100.0 - (sum(rate(grpc_server_handling_seconds_bucket{job="sub",grpc_type="unary",le="0.25"}[5m])) by (grpc_method) / sum(rate(grpc_server_handling_seconds_count{job="sub",grpc_type="unary"}[5m])) by (grpc_method)) * 100.0) > 10
+        labels:
+          app_type: sub
+          severity: critical
+          category: server
+        annotations:
+          summary: Sub service is slow. (10% of requests is slower than 250ms)
+      - alert: RateWatcherSlow
+        expr: event_sent_seconds_sum{event="rate"} / event_sent_seconds_count{event="rate"} > 1
+        labels:
+          app_type: rw
+          severity: critical
+          category: server
+        annotations:
+          summary: Rate Watcher service is slow. (Average of request takes longer than second)
+      - alert: MailerSlow
+        expr: event_sent_seconds_sum{event="mail"} / event_sent_seconds_count{event="mail"} > 1
+        labels:
+          app_type: mailer
+          severity: critical
+          category: server
+        annotations:
+          summary: Mailer service is slow. (Average of request takes longer than second)
+  - name: node-alert-rules
+    rules:
+      - alert: NodeExporterDown
+        expr: up{job="node"} == 0
+        for: 2m
+        labels:
+          app_type: linux
+          severity: critical
+          category: server
+        annotations:
+          summary: Node exporter is down
+          description: Node exporter is dowm for {{ $labels.instance }}
+      - alert: NodeMemoryUsageHigherThan60
+        expr: (node_memory_MemAvailable_bytes/node_memory_MemTotal_bytes * 100) < 60
+        for: 1m
+        labels:
+          severity: warn
+          app_type: linux
+          category: memory
+        annotations:
+          summary: Node memory usage is higher than 70%
+          description: Node memory usage for {{ $labels.instance }} has reached {{ $value }}
+      - alert: NodeMemoryUsageHigherThan70
+        expr: (node_memory_MemAvailable_bytes/node_memory_MemTotal_bytes * 100) < 70
+        for: 1m
+        labels:
+          severity: critical
+          app_type: linux
+          category: memory
+        annotations:
+          summary: Node memory usage is higher than 70%
+          description: Node memory usage for {{ $labels.instance }} has reached {{ $value }}

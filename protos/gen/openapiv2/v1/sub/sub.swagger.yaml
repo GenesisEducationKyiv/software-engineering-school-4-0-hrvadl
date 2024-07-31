@@ -57,6 +57,53 @@ paths:
           type: string
       tags:
         - user subscribe subscription
+  /api/v1/unsubscribe:
+    post:
+      summary: Subscribe user
+      description: Subscribe user
+      operationId: SubService_Unsubscribe
+      responses:
+        "200":
+          description: Returned when user was successfully unsubscribed
+          schema:
+            type: object
+            properties: {}
+          examples:
+            application/json:
+              message: unsubscribed email
+              success: true
+        "400":
+          description: Returned when email is not valid
+          schema: {}
+          examples:
+            application/json:
+              message: email is not valid
+              success: false
+        "409":
+          description: Returned when email is not subscribed
+          schema: {}
+          examples:
+            application/json:
+              message: email is not subscribed
+              success: false
+        "500":
+          description: Returned when there was error on server side
+          schema: {}
+          examples:
+            application/json:
+              message: internal server error
+              success: false
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: email
+          in: query
+          required: true
+          type: string
+      tags:
+        - user subscribe subscription
 definitions:
   protobufAny:
     type: object

@@ -22,6 +22,8 @@ jobs:
       MAILER_TEST_SMTP_HOST: "0.0.0.0"
       MAILER_TEST_SMTP_PORT: "1025"
       MAILER_TEST_API_PORT: "8025"
+      MAILER_NATS_TEST_PORT: "4222"
+      MAILER_NATS_TEST_URL: "http://0.0.0.0:4222"
 
     steps:
       - name: Checkout

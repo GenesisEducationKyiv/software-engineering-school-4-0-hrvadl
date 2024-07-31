@@ -1,6 +1,8 @@
 package subscriber
 
-import "time"
+import (
+	"time"
+)
 
 // Subscriber is a model, which represents
 // user, subscribed to daily receive mails about

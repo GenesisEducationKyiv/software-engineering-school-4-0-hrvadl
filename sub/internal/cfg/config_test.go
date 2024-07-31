@@ -16,6 +16,7 @@ const (
 	portEnvKey              = "SUB_PORT"
 	dsnEnvKey               = "SUB_DSN"
 	natsURLEnvKey           = "NATS_URL"
+	prometheusPortEnvKey    = "PROMETHEUS_PORT"
 )
 
 func TestMust(t *testing.T) {
@@ -84,6 +85,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(portEnvKey, "3030")
 				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want: &Config{
 				MailerAddr:      "mailer:80",
@@ -92,6 +94,7 @@ func TestNewFromEnv(t *testing.T) {
 				Port:            "3030",
 				Dsn:             "mysql://test:tests@(db:testse)/shgsoh",
 				NatsURL:         "nats://nats:4222",
+				PrometheusPort:  "2112",
 			},
 			wantErr: false,
 		},
@@ -104,6 +107,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(portEnvKey, "3030")
 				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -118,6 +122,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(portEnvKey, "3030")
 				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -132,6 +137,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(portEnvKey, "3030")
 				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -146,6 +152,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(portEnvKey, "")
 				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -160,6 +167,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(portEnvKey, "801")
 				t.Setenv(dsnEnvKey, "")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -173,6 +181,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(logLevelEnvKey, "debug")
 				t.Setenv(portEnvKey, "4040")
 				t.Setenv(dsnEnvKey, "mysql://test:tests@(db:testse)/shgsoh")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
