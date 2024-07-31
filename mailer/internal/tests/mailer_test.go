@@ -65,6 +65,7 @@ func TestAppGotSubscribersChangedEvent(t *testing.T) {
 			args: args{
 				subject: subject,
 				event: &sub.SubscriberChangedEvent{
+					Type:  "subscriber-added",
 					Email: "testinsert@test.com",
 				},
 			},
@@ -79,8 +80,8 @@ func TestAppGotSubscribersChangedEvent(t *testing.T) {
 			args: args{
 				subject: subject,
 				event: &sub.SubscriberChangedEvent{
-					Email:   "test@test.com",
-					Deleted: true,
+					Type:  "subscriber-deleted",
+					Email: "test@test.com",
 				},
 			},
 			setup:   func(*testing.T, *mongo.Database) {},
@@ -91,8 +92,8 @@ func TestAppGotSubscribersChangedEvent(t *testing.T) {
 			args: args{
 				subject: subject,
 				event: &sub.SubscriberChangedEvent{
-					Email:   "test@test.com",
-					Deleted: true,
+					Type:  "subscriber-deleted",
+					Email: "test@test.com",
 				},
 			},
 			setup: func(t *testing.T, db *mongo.Database) {
@@ -156,8 +157,10 @@ func TestAppGotSubscribersChangedEvent(t *testing.T) {
 			bytes, err := json.Marshal(tt.args.event)
 			require.NoError(t, err)
 
-			_, _ = js.Publish(ctx, subject, bytes)
-			require.NoError(t, err)
+			_, err = js.Publish(ctx, subject, bytes)
+			if !tt.wantErr {
+				require.NoError(t, err)
+			}
 
 			subscriber := new(subscriber.Subscriber)
 

@@ -104,11 +104,22 @@ services:
       - --enable-feature=native-histograms
       - --config.file=/etc/prometheus/prometheus.yml
     volumes:
-      - "./infra/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "${PWD}/infra/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "${PWD}/infra/rules.yml:/etc/prometheus/rules.yml"
     ports:
       - "9090:9090"
     networks:
       - converter
+
+  alert-manager:
+    image: prom/alertmanager
+    networks:
+      - converter
+    ports:
+      - 9093:9093
+    volumes:
+      - ${PWD}/infra/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ${PWD}/infra/password.txt:/etc/alertmanager/password.txt
 
   node-exporter:
     image: prom/node-exporter:latest

@@ -11,3 +11,27 @@ scrape_configs:
     static_configs:
       - targets:
           - node-exporter:9100
+  - job_name: rw
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - rw:2112
+  - job_name: mailer
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - mailer:2112
+  - job_name: sub
+    scrape_interval: 10s
+    static_configs:
+      - targets:
+          - sub:2112
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alert-manager:9093
+
+rule_files:
+  - "/etc/prometheus/rules.yml"

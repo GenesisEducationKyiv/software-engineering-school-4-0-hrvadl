@@ -20,6 +20,7 @@ const (
 	mailerPortEnvKey          = "MAILER_SMTP_PORT"
 	natsURLEnvKey             = "NATS_URL"
 	mongoURLEnvKey            = "MONGO_URL"
+	prometheusPortEnvKey      = "PROMETHEUS_PORT"
 )
 
 func TestMust(t *testing.T) {
@@ -92,6 +93,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want: &Config{
 				LogLevel:            "debug",
@@ -104,6 +106,7 @@ func TestNewFromEnv(t *testing.T) {
 				MailerPort:          528,
 				NatsURL:             "nats://nats:4222",
 				MongoURL:            "mongo://mongo:27777",
+				PrometheusPort:      "2112",
 			},
 			wantErr: false,
 		},
@@ -120,6 +123,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -137,6 +141,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -153,6 +158,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -170,6 +176,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -187,6 +194,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -204,6 +212,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -221,6 +230,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -238,6 +248,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerHostEnvKey, "host")
 				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -255,6 +266,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(natsURLEnvKey, "nats://nats:4222")
 				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -272,6 +284,7 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(mailerPortEnvKey, "528")
 				t.Setenv(mailerHostEnvKey, "smtp.google.com")
 				t.Setenv(mongoURLEnvKey, "mongo://mongo:27777")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,

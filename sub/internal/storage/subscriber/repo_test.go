@@ -5,15 +5,16 @@ package subscriber
 import (
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
+
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/platform/db"
 )
 
 func TestNewRepo(t *testing.T) {
-	t.Parallel()
 	type args struct {
-		db *sqlx.DB
+		db *db.Tx
 	}
+	t.Parallel()
 	tests := []struct {
 		name string
 		args args
@@ -21,7 +22,7 @@ func TestNewRepo(t *testing.T) {
 		{
 			name: "Should create repo with correct db conn",
 			args: args{
-				db: &sqlx.DB{},
+				db: &db.Tx{},
 			},
 		},
 	}

@@ -75,6 +75,53 @@ func (ErrorCode) EnumDescriptor() ([]byte, []int) {
 	return file_v1_sub_sub_proto_rawDescGZIP(), []int{0}
 }
 
+type SubscriptionAddedEvent struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+}
+
+func (x *SubscriptionAddedEvent) Reset() {
+	*x = SubscriptionAddedEvent{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_sub_sub_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SubscriptionAddedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubscriptionAddedEvent) ProtoMessage() {}
+
+func (x *SubscriptionAddedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_sub_sub_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubscriptionAddedEvent.ProtoReflect.Descriptor instead.
+func (*SubscriptionAddedEvent) Descriptor() ([]byte, []int) {
+	return file_v1_sub_sub_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *SubscriptionAddedEvent) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
 type SubscribeRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -86,7 +133,7 @@ type SubscribeRequest struct {
 func (x *SubscribeRequest) Reset() {
 	*x = SubscribeRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_sub_sub_proto_msgTypes[0]
+		mi := &file_v1_sub_sub_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -99,7 +146,7 @@ func (x *SubscribeRequest) String() string {
 func (*SubscribeRequest) ProtoMessage() {}
 
 func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sub_sub_proto_msgTypes[0]
+	mi := &file_v1_sub_sub_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -112,7 +159,7 @@ func (x *SubscribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubscribeRequest.ProtoReflect.Descriptor instead.
 func (*SubscribeRequest) Descriptor() ([]byte, []int) {
-	return file_v1_sub_sub_proto_rawDescGZIP(), []int{0}
+	return file_v1_sub_sub_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *SubscribeRequest) GetEmail() string {
@@ -133,7 +180,7 @@ type UnsubscribeRequest struct {
 func (x *UnsubscribeRequest) Reset() {
 	*x = UnsubscribeRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_sub_sub_proto_msgTypes[1]
+		mi := &file_v1_sub_sub_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -146,7 +193,7 @@ func (x *UnsubscribeRequest) String() string {
 func (*UnsubscribeRequest) ProtoMessage() {}
 
 func (x *UnsubscribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sub_sub_proto_msgTypes[1]
+	mi := &file_v1_sub_sub_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -159,7 +206,7 @@ func (x *UnsubscribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnsubscribeRequest.ProtoReflect.Descriptor instead.
 func (*UnsubscribeRequest) Descriptor() ([]byte, []int) {
-	return file_v1_sub_sub_proto_rawDescGZIP(), []int{1}
+	return file_v1_sub_sub_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *UnsubscribeRequest) GetEmail() string {
@@ -182,7 +229,7 @@ type BadRequest struct {
 func (x *BadRequest) Reset() {
 	*x = BadRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_v1_sub_sub_proto_msgTypes[2]
+		mi := &file_v1_sub_sub_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -195,7 +242,7 @@ func (x *BadRequest) String() string {
 func (*BadRequest) ProtoMessage() {}
 
 func (x *BadRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_sub_sub_proto_msgTypes[2]
+	mi := &file_v1_sub_sub_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -208,7 +255,7 @@ func (x *BadRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BadRequest.ProtoReflect.Descriptor instead.
 func (*BadRequest) Descriptor() ([]byte, []int) {
-	return file_v1_sub_sub_proto_rawDescGZIP(), []int{2}
+	return file_v1_sub_sub_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *BadRequest) GetCode() ErrorCode {
@@ -245,7 +292,10 @@ var file_v1_sub_sub_proto_rawDesc = []byte{
 	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x63, 0x2d, 0x67,
 	0x65, 0x6e, 0x2d, 0x6f, 0x70, 0x65, 0x6e, 0x61, 0x70, 0x69, 0x76, 0x32, 0x2f, 0x6f, 0x70, 0x74,
 	0x69, 0x6f, 0x6e, 0x73, 0x2f, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73,
-	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x2d, 0x0a, 0x10, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x2e, 0x0a, 0x16, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72,
+	0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x41, 0x64, 0x64, 0x65, 0x64, 0x45, 0x76, 0x65, 0x6e, 0x74,
+	0x12, 0x14, 0x0a, 0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x65, 0x6d, 0x61, 0x69, 0x6c, 0x22, 0x2d, 0x0a, 0x10, 0x53, 0x75, 0x62, 0x73, 0x63, 0x72,
 	0x69, 0x62, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x05, 0x65, 0x6d,
 	0x61, 0x69, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x03, 0xe0, 0x41, 0x02, 0x52, 0x05,
 	0x65, 0x6d, 0x61, 0x69, 0x6c, 0x22, 0x2f, 0x0a, 0x12, 0x55, 0x6e, 0x73, 0x75, 0x62, 0x73, 0x63,
@@ -378,20 +428,21 @@ func file_v1_sub_sub_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_sub_sub_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_sub_sub_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_v1_sub_sub_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_v1_sub_sub_proto_goTypes = []any{
-	(ErrorCode)(0),             // 0: sub.v1.ErrorCode
-	(*SubscribeRequest)(nil),   // 1: sub.v1.SubscribeRequest
-	(*UnsubscribeRequest)(nil), // 2: sub.v1.UnsubscribeRequest
-	(*BadRequest)(nil),         // 3: sub.v1.BadRequest
-	(*emptypb.Empty)(nil),      // 4: google.protobuf.Empty
+	(ErrorCode)(0),                 // 0: sub.v1.ErrorCode
+	(*SubscriptionAddedEvent)(nil), // 1: sub.v1.SubscriptionAddedEvent
+	(*SubscribeRequest)(nil),       // 2: sub.v1.SubscribeRequest
+	(*UnsubscribeRequest)(nil),     // 3: sub.v1.UnsubscribeRequest
+	(*BadRequest)(nil),             // 4: sub.v1.BadRequest
+	(*emptypb.Empty)(nil),          // 5: google.protobuf.Empty
 }
 var file_v1_sub_sub_proto_depIdxs = []int32{
 	0, // 0: sub.v1.BadRequest.code:type_name -> sub.v1.ErrorCode
-	2, // 1: sub.v1.SubService.Unsubscribe:input_type -> sub.v1.UnsubscribeRequest
-	1, // 2: sub.v1.SubService.Subscribe:input_type -> sub.v1.SubscribeRequest
-	4, // 3: sub.v1.SubService.Unsubscribe:output_type -> google.protobuf.Empty
-	4, // 4: sub.v1.SubService.Subscribe:output_type -> google.protobuf.Empty
+	3, // 1: sub.v1.SubService.Unsubscribe:input_type -> sub.v1.UnsubscribeRequest
+	2, // 2: sub.v1.SubService.Subscribe:input_type -> sub.v1.SubscribeRequest
+	5, // 3: sub.v1.SubService.Unsubscribe:output_type -> google.protobuf.Empty
+	5, // 4: sub.v1.SubService.Subscribe:output_type -> google.protobuf.Empty
 	3, // [3:5] is the sub-list for method output_type
 	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -406,7 +457,7 @@ func file_v1_sub_sub_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_v1_sub_sub_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*SubscribeRequest); i {
+			switch v := v.(*SubscriptionAddedEvent); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -418,7 +469,7 @@ func file_v1_sub_sub_proto_init() {
 			}
 		}
 		file_v1_sub_sub_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*UnsubscribeRequest); i {
+			switch v := v.(*SubscribeRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -430,6 +481,18 @@ func file_v1_sub_sub_proto_init() {
 			}
 		}
 		file_v1_sub_sub_proto_msgTypes[2].Exporter = func(v any, i int) any {
+			switch v := v.(*UnsubscribeRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_v1_sub_sub_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*BadRequest); i {
 			case 0:
 				return &v.state
@@ -448,7 +511,7 @@ func file_v1_sub_sub_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_sub_sub_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

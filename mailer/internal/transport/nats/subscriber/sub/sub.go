@@ -7,26 +7,31 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/nats-io/nats.go/jetstream"
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/sub"
+	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/subscriber"
 )
 
 const (
-	operation = "sub subscriber"
-	subject   = "subscribers-changed"
-	stream    = "DebeziumStream"
-	consumer  = "sub-consumer"
+	operation     = "sub subscriber"
+	subject       = "subscribers-changed"
+	failedSubject = "subscribers-changed-failed"
+	stream        = "DebeziumStream"
+	consumer      = "sub-consumer"
+	deleteEvent   = "subscriber-deleted"
+	insertEvent   = "subscriber-added"
 )
 
 func NewSubscriber(
-	js jetstream.JetStream,
+	conn *nats.Conn,
 	sc SubscriberSource,
 	log *slog.Logger,
 	timeout time.Duration,
 ) *Subscriber {
 	return &Subscriber{
-		stream:    js,
+		nats:      conn,
 		commander: sc,
 		log:       log,
 		timeout:   timeout,
@@ -47,32 +52,14 @@ type SubscriberSource interface {
 }
 
 type Subscriber struct {
-	stream    jetstream.JetStream
+	nats      *nats.Conn
 	commander SubscriberSource
 	log       *slog.Logger
 	timeout   time.Duration
 }
 
 func (s *Subscriber) Subscribe() error {
-	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
-	defer cancel()
-
-	stream, err := s.stream.Stream(ctx, stream)
-	if err != nil {
-		return fmt.Errorf("%s: failed to subscribe to jetstream: %w", operation, err)
-	}
-
-	cons, err := stream.CreateOrUpdateConsumer(ctx, jetstream.ConsumerConfig{
-		Name:          consumer,
-		AckPolicy:     jetstream.AckExplicitPolicy,
-		DeliverPolicy: jetstream.DeliverNewPolicy,
-		FilterSubject: subject,
-	})
-	if err != nil {
-		return fmt.Errorf("%s: failed to create a consumer: %w", operation, err)
-	}
-
-	if _, err = cons.Consume(s.subscribe); err != nil {
+	if _, err := s.nats.Subscribe(subject, s.subscribe); err != nil {
 		return fmt.Errorf("%s: failed to consume: %w", operation, err)
 	}
 
@@ -80,37 +67,61 @@ func (s *Subscriber) Subscribe() error {
 }
 
 type SubscriberChangedEvent struct {
-	Email   string `json:"email"`
-	Deleted bool   `json:"__deleted,string"`
+	ID      int    `json:"id"`
+	Type    string `json:"type"`
+	Payload string `json:"payload"`
 }
 
-func (s *Subscriber) subscribe(msg jetstream.Msg) {
+func (s *Subscriber) subscribe(msg *nats.Msg) {
 	var in SubscriberChangedEvent
-	if err := json.Unmarshal(msg.Data(), &in); err != nil {
-		s.log.Error("Failed to parse change event", slog.Any("err", err))
+	if err := json.Unmarshal(msg.Data, &in); err != nil {
+		s.log.Error(
+			"Failed to parse change event",
+			slog.Any("err", err),
+			slog.String("data", string(msg.Data)),
+		)
 		return
 	}
 
 	defer s.ack(msg)
-	s.log.Info("Got sub change event from NATS", slog.Bool("deleted", in.Deleted))
+	s.log.Info("Got sub change event from NATS")
 
-	sub := subscriber.Subscriber{Email: in.Email}
+	var ev pb.SubscriptionAddedEvent
+	if err := protojson.Unmarshal([]byte(in.Payload), &ev); err != nil {
+		s.log.Error("Failed to parse change event", slog.Any("err", err))
+		return
+	}
+
+	sub := subscriber.Subscriber{Email: ev.GetEmail()}
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
 
 	var err error
-	if in.Deleted {
+	switch in.Type {
+	case deleteEvent:
 		err = s.commander.Delete(ctx, sub)
-	} else {
+	case insertEvent:
 		err = s.commander.Save(ctx, sub)
+	default:
+		s.log.Error("Unknown event", slog.Any("type", in.Type))
+		return
 	}
 
 	if err != nil {
 		s.log.Error("Failed to delete/save sub", slog.Any("err", err))
+		s.fail(msg.Data)
+		return
 	}
 }
 
-func (s *Subscriber) ack(msg jetstream.Msg) {
+func (s *Subscriber) fail(data []byte) {
+	const failTimeout = time.Second * 5
+	if _, err := s.nats.Request(failedSubject, data, failTimeout); err != nil {
+		s.log.Error("Failed to send fail event", slog.Any("err", err))
+	}
+}
+
+func (s *Subscriber) ack(msg *nats.Msg) {
 	if err := msg.Ack(); err != nil {
 		s.log.Error("Failed to send ack", slog.Any("err", err))
 	}

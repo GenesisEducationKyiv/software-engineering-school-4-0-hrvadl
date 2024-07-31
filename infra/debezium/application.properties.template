@@ -9,6 +9,7 @@ debezium.source.database.dbname=converter
 debezium.source.database.server.id=1
 
 debezium.source.database.include.list=converter
+debezium.source.table.include.list=converter.events
 debezium.source.publication.autocreate.mode=filtered
 debezium.source.include.schema.changes=false
 debezium.source.topic.prefix=sub
@@ -17,18 +18,17 @@ debezium.source.topic.prefix=sub
 debezium.source.schema.history.internal=io.debezium.relational.history.MemorySchemaHistory
 debezium.source.offset.storage.file.filename=data/offsets.dat
 debezium.source.snapshot.mode=schema_only
+debezium.source.tombstones.on.delete=false
 
 debezium.source.transforms=route,unwrap
 debezium.source.value.converter=org.apache.kafka.connect.json.JsonConverter
 debezium.source.value.converter.schemas.enable=false
 debezium.source.transforms.unwrap.type=io.debezium.transforms.ExtractNewRecordState
-debezium.source.transforms.unwrap.drop.tombstones=false
 debezium.source.transfroms.unwrap.drop.fields.from.key=true
-debezium.source.transforms.unwrap.delete.handling.mode=rewrite
+debezium.source.transforms.unwrap.delete.tombstone.handling.mode=drop
 debezium.source.transforms.route.type=org.apache.kafka.connect.transforms.RegexRouter
 debezium.source.transforms.route.regex=([^.]+)\\.([^.]+)\\.([^.]+)
-debezium.source.transforms.route.replacement=$3-changed
-
+debezium.source.transforms.route.replacement=subscribers-changed
 
 # SINK
 debezium.sink.type=nats-jetstream

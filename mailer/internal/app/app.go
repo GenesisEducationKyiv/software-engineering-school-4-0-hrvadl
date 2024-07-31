@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
 	runner "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/cron"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/metrics"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/cfg"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/gomail"
@@ -30,8 +31,8 @@ import (
 const operation = "app init"
 
 const (
-	sendHours   = 7
-	sendMinutes = 52
+	sendHours   = 12
+	sendMinutes = 0o0
 )
 
 // New constructs new App with provided arguments.
@@ -47,10 +48,11 @@ func New(cfg cfg.Config, log *slog.Logger) *App {
 // db connections, and GRPC server/clients. Could return an error if any
 // of described above steps failed.
 type App struct {
-	cfg  cfg.Config
-	log  *slog.Logger
-	nats *nats.Conn
-	db   *db.Conn
+	cfg     cfg.Config
+	log     *slog.Logger
+	nats    *nats.Conn
+	db      *db.Conn
+	metrics *metrics.Engine
 }
 
 // MustRun is a wrapper around App.Run() function which could be handly
@@ -95,12 +97,7 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to connect to nats: %w", operation, err)
 	}
 
-	js, err := jetstream.New(a.nats)
-	if err != nil {
-		return fmt.Errorf("%s: failed to connect to jetstream: %w", operation, err)
-	}
-
-	subSubscriber := subSub.NewSubscriber(js, subSvc, a.log, a.cfg.ConnectTimeout)
+	subSubscriber := subSub.NewSubscriber(a.nats, subSvc, a.log, a.cfg.ConnectTimeout)
 	if err = subSubscriber.Subscribe(); err != nil {
 		return fmt.Errorf("%s: failed to sub to CDC: %w", operation, err)
 	}
@@ -115,6 +112,11 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: failed to subscribe: %w", operation, err)
 	}
 
+	a.metrics = metrics.NewEngine(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
+	if err := a.metrics.Register(runner.GetMetrics()...); err != nil {
+		return fmt.Errorf("%s: failed to register metrics: %w", operation, err)
+	}
+
 	adp := cron.NewAdapter(
 		rateSvc,
 		subSvc,
@@ -124,7 +126,13 @@ func (a *App) Run() error {
 		a.log,
 	)
 	job := runner.NewDailyJob(sendHours, sendMinutes, a.log)
-	job.Do(adp)
+	job.Do(runner.NewWithMetrics(adp, "mail"))
+
+	go func() {
+		if err := a.metrics.Start(); err != nil {
+			a.log.Error("Failed to serve metrics", slog.Any("err", err))
+		}
+	}()
 
 	return nil
 }
