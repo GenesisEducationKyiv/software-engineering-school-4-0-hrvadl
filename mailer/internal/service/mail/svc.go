@@ -3,7 +3,7 @@ package mail
 import (
 	"context"
 
-	model "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/models/mail"
+	model "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/mail"
 )
 
 // NewService constructs service with provided

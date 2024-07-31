@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	mail "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/models/mail"
+	mail "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/mail"
 	gomock "go.uber.org/mock/gomock"
 )
 

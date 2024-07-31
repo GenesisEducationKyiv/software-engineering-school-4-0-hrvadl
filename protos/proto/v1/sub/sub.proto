@@ -6,20 +6,18 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
-
 option go_package = "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/v1/sub";
-
 
 service SubService {
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_tag) = {
-    name: "Subscription serivce";
-    description: "Service responsible for subscribing users and sending rate exchange notifications";
+    name: "Subscription serivce"
+    description: "Service responsible for subscribing users and sending rate exchange notifications"
   };
-  rpc Subscribe(SubscribeRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {post: "/api/v1/subscribe"};
+  rpc Unsubscribe(UnsubscribeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {post: "/api/v1/unsubscribe"};
     option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
-      description: "Subscribe user";
-      summary: "Subscribe user";
+      description: "Subscribe user"
+      summary: "Subscribe user"
       tags: "user subscribe subscription"
       responses: {
         key: "500"
@@ -28,9 +26,9 @@ service SubService {
           examples: {
             key: "application/json"
             value: "{\"message\": \"internal server error\", \"success\": false}"
-          };
-        };
-      };
+          }
+        }
+      }
       responses: {
         key: "400"
         value: {
@@ -38,9 +36,57 @@ service SubService {
           examples: {
             key: "application/json"
             value: "{\"message\": \"email is not valid\", \"success\": false}"
-          };
-        };
-      };
+          }
+        }
+      }
+      responses: {
+        key: "409"
+        value: {
+          description: "Returned when email is not subscribed"
+          examples: {
+            key: "application/json"
+            value: "{\"message\": \"email is not subscribed\", \"success\": false}"
+          }
+        }
+      }
+      responses: {
+        key: "200"
+        value: {
+          description: "Returned when user was successfully unsubscribed"
+          examples: {
+            key: "application/json"
+            value: "{\"message\": \"unsubscribed email\", \"success\": true}"
+          }
+        }
+      }
+    };
+  }
+  rpc Subscribe(SubscribeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {post: "/api/v1/subscribe"};
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      description: "Subscribe user"
+      summary: "Subscribe user"
+      tags: "user subscribe subscription"
+      responses: {
+        key: "500"
+        value: {
+          description: "Returned when there was error on server side"
+          examples: {
+            key: "application/json"
+            value: "{\"message\": \"internal server error\", \"success\": false}"
+          }
+        }
+      }
+      responses: {
+        key: "400"
+        value: {
+          description: "Returned when email is not valid"
+          examples: {
+            key: "application/json"
+            value: "{\"message\": \"email is not valid\", \"success\": false}"
+          }
+        }
+      }
       responses: {
         key: "409"
         value: {
@@ -48,9 +94,9 @@ service SubService {
           examples: {
             key: "application/json"
             value: "{\"message\": \"email is already used\", \"success\": false}"
-          };
-        };
-      };
+          }
+        }
+      }
       responses: {
         key: "200"
         value: {
@@ -58,14 +104,22 @@ service SubService {
           examples: {
             key: "application/json"
             value: "{\"message\": \"added email\", \"success\": true}"
-          };
-        };
-      };
+          }
+        }
+      }
     };
-  };
+  }
+}
+
+message SubscriptionAddedEvent {
+  string email = 1;
 }
 
 message SubscribeRequest {
+  string email = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UnsubscribeRequest {
   string email = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -73,6 +127,7 @@ enum ErrorCode {
   ERROR_CODE_UNSPECIFIED = 0;
   ERROR_CODE_INVALID_EMAIL_FORMAT = 1;
   ERROR_CODE_ALREADY_EXISTS = 2;
+  ERROR_CODE_NOT_EXISTS = 3;
 }
 
 message BadRequest {

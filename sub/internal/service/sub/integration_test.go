@@ -42,8 +42,8 @@ func TestMain(t *testing.M) {
 
 func TestServiceSubscribe(t *testing.T) {
 	type args struct {
-		ctx  context.Context
-		mail string
+		ctx context.Context
+		sub subscriber.Subscriber
 	}
 	testCases := []struct {
 		name    string
@@ -53,32 +53,32 @@ func TestServiceSubscribe(t *testing.T) {
 		{
 			name: "Should subscribe correctly",
 			args: args{
-				ctx:  context.Background(),
-				mail: "test@mail.com",
+				ctx: context.Background(),
+				sub: subscriber.Subscriber{Email: "test@mail.com"},
 			},
 			wantErr: false,
 		},
 		{
 			name: "Should not subscribe correctly when it takes too long",
 			args: args{
-				ctx:  newImmediateCtx(),
-				mail: "test1111@mail.com",
+				ctx: newImmediateCtx(),
+				sub: subscriber.Subscriber{Email: "test1111@mail.com"},
 			},
 			wantErr: true,
 		},
 		{
 			name: "Should not subscribe when email is empty",
 			args: args{
-				ctx:  context.Background(),
-				mail: "",
+				ctx: context.Background(),
+				sub: subscriber.Subscriber{},
 			},
 			wantErr: true,
 		},
 		{
 			name: "Should not subscribe when email is incorrect",
 			args: args{
-				ctx:  context.Background(),
-				mail: "tetmail.com",
+				ctx: context.Background(),
+				sub: subscriber.Subscriber{Email: "tetmail.com"},
 			},
 			wantErr: true,
 		},
@@ -86,26 +86,26 @@ func TestServiceSubscribe(t *testing.T) {
 
 	dsn := os.Getenv(testDSNEnvKey)
 	require.NotZero(t, dsn, "test DSN can not be empty")
-	db, err := db.NewConn(dsn)
+	dbConn, err := db.NewConn(dsn)
 	require.NoError(t, err, "Failed to connect to db")
 	t.Cleanup(func() {
-		require.NoError(t, db.Close(), "Failed to close DB")
+		require.NoError(t, dbConn.Close(), "Failed to close DB")
 	})
 
-	rs := subscriber.NewRepo(db)
+	rs := subscriber.NewRepo(db.NewWithTx(dbConn))
 	v := validator.NewStdlib()
 	s := NewService(rs, v)
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			id, err := s.Subscribe(tt.args.ctx, tt.args.mail)
+			id, err := s.Subscribe(tt.args.ctx, tt.args.sub)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 
 			t.Cleanup(func() {
-				cleanupSub(t, db, id)
+				cleanupSub(t, dbConn, id)
 			})
 
 			require.NoError(t, err)
@@ -116,8 +116,8 @@ func TestServiceSubscribe(t *testing.T) {
 
 func TestServiceSubscribeTwice(t *testing.T) {
 	type args struct {
-		ctx  context.Context
-		mail string
+		ctx context.Context
+		sub subscriber.Subscriber
 	}
 	testCases := []struct {
 		name string
@@ -126,42 +126,42 @@ func TestServiceSubscribeTwice(t *testing.T) {
 		{
 			name: "Should not subscribe twice",
 			args: args{
-				ctx:  context.Background(),
-				mail: "test@mail.com",
+				ctx: context.Background(),
+				sub: subscriber.Subscriber{Email: "test@mail.com"},
 			},
 		},
 		{
 			name: "Should not subscribe twice",
 			args: args{
-				ctx:  context.Background(),
-				mail: "testnew@mail.com",
+				ctx: context.Background(),
+				sub: subscriber.Subscriber{Email: "testnew@mail.com"},
 			},
 		},
 	}
 
 	dsn := os.Getenv(testDSNEnvKey)
 	require.NotZero(t, dsn, "test DSN can not be empty")
-	db, err := db.NewConn(dsn)
+	dbConn, err := db.NewConn(dsn)
 	require.NoError(t, err, "Failed to connect to db")
 	t.Cleanup(func() {
-		require.NoError(t, db.Close(), "Failed to close DB")
+		require.NoError(t, dbConn.Close(), "Failed to close DB")
 	})
 
-	rs := subscriber.NewRepo(db)
+	rs := subscriber.NewRepo(db.NewWithTx(dbConn))
 	v := validator.NewStdlib()
 	s := NewService(rs, v)
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			id, err := s.Subscribe(tt.args.ctx, tt.args.mail)
+			id, err := s.Subscribe(tt.args.ctx, tt.args.sub)
 			t.Cleanup(func() {
-				cleanupSub(t, db, id)
+				cleanupSub(t, dbConn, id)
 			})
 
 			require.NoError(t, err)
 			require.NotZero(t, id)
 
-			id, err = s.Subscribe(tt.args.ctx, tt.args.mail)
+			id, err = s.Subscribe(tt.args.ctx, tt.args.sub)
 			require.Error(t, err)
 			require.Zero(t, id)
 		})

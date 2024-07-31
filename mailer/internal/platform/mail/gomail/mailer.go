@@ -6,7 +6,7 @@ import (
 
 	"gopkg.in/gomail.v2"
 
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/models/mail"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/mail"
 )
 
 const operation = "smtp client"

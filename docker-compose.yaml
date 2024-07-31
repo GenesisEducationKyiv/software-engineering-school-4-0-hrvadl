@@ -10,6 +10,7 @@ services:
     depends_on:
       - sub
       - rw
+      - mailer
     env_file:
       - .env
     networks:
@@ -53,19 +54,28 @@ services:
     depends_on:
       nats:
         condition: service_healthy
+      debezium:
+        condition: service_healthy
+      mongo:
+        condition: service_started
     env_file:
       - .env
     networks:
       - converter
 
   db:
-    image: mysql
+    image: mysql:8.0-debian
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       start_period: 5s
       interval: 3s
       timeout: 3s
       retries: 30
+    command:
+      - --log-bin=binlog
+      - --binlog-format=ROW
+      - --server-id=1
+      - --binlog-do-db=${MYSQL_DATABASE}
     env_file:
       - .env
     volumes:
@@ -94,11 +104,22 @@ services:
       - --enable-feature=native-histograms
       - --config.file=/etc/prometheus/prometheus.yml
     volumes:
-      - "./infra/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "${PWD}/infra/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "${PWD}/infra/rules.yml:/etc/prometheus/rules.yml"
     ports:
       - "9090:9090"
     networks:
       - converter
+
+  alert-manager:
+    image: prom/alertmanager
+    networks:
+      - converter
+    ports:
+      - 9093:9093
+    volumes:
+      - ${PWD}/infra/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ${PWD}/infra/password.txt:/etc/alertmanager/password.txt
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -143,14 +164,49 @@ services:
       interval: 14s
     ports:
       - 4222:4222
-      - 6222:6222
       - 8222:8222
+    command:
+      - "--debug"
+      - "--http_port=8222"
+      - "--jetstream"
     networks:
       - converter
+
+  debezium:
+    image: docker.io/debezium/server:latest
+    volumes:
+      - ./infra/debezium/:/debezium/conf
+    healthcheck:
+      test: curl --silent http://localhost:8080/q/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - migrate
+      - nats
+    networks:
+      - converter
+
+  mongo:
+    image: mongo:4.4.6
+    restart: always
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo mongo:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    env_file:
+      - .env
+    networks:
+      - converter
+    volumes:
+      - notifierdata:/data/db
 
 networks:
   converter:
     driver: bridge
 
 volumes:
-  converterdata:
+  converterdata: {}
+  notifierdata: {}

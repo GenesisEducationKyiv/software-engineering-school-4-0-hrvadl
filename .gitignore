@@ -5,3 +5,6 @@
 */bin
 **/output/
 .idea/
+infra/debezium/schema.json
+application.properties
+password.txt

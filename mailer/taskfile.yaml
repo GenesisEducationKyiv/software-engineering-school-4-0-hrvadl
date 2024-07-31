@@ -76,6 +76,7 @@ tasks:
     vars:
       SMTP_CONTAINER_NAME: "mailpit"
       NATS_CONTAINER_NAME: "nats-test"
+      MONGO_CONTAINER_NAME: "mongo-test"
     requires:
       vars:
         - MAILER_TEST_SMTP_PASSWORD
@@ -85,12 +86,20 @@ tasks:
         - MAILER_TEST_API_PORT
         - MAILER_NATS_TEST_PORT
         - MAILER_NATS_TEST_URL
+        - MAILER_MONGO_TEST_PORT
     deps:
       - task: run:mailpit
         vars:
           CONTAINER_NAME: "{{ .SMTP_CONTAINER_NAME }}"
           SMTP_PORT: "{{ .MAILER_TEST_SMTP_PORT }}"
           API_PORT: "{{ .MAILER_TEST_API_PORT }}"
+      - task: run:mongo
+        vars:
+          PORT: "{{ .MAILER_MONGO_TEST_PORT }}"
+          CONTAINER_NAME: "{{ .MONGO_CONTAINER_NAME }}"
+      - task: healthcheck:mongo
+        vars:
+          CONTAINER_NAME: "{{ .MONGO_CONTAINER_NAME }}"
       - task: run:nats
         vars:
           CONTAINER_NAME: "{{ .NATS_CONTAINER_NAME }}"
@@ -105,7 +114,31 @@ tasks:
     cmds:
       - defer: docker stop {{ .SMTP_CONTAINER_NAME }} && docker rm {{ .SMTP_CONTAINER_NAME }}
       - defer: docker stop {{ .NATS_CONTAINER_NAME }} && docker rm {{ .NATS_CONTAINER_NAME }}
+      - defer: docker stop {{ .MONGO_CONTAINER_NAME }} && docker rm {{ .MONGO_CONTAINER_NAME }}
       - go test -tags=integration ./... {{ .CLI_ARGS }}
+
+  run:mongo:
+    requires:
+      vars:
+        - PORT
+    cmds:
+      - docker run -d --name {{ .CONTAINER_NAME }} -p {{ .PORT }}:27017 mongo:4.4.6
+
+  healthcheck:mongo:
+    requires:
+      vars:
+        - CONTAINER_NAME
+    cmds:
+      - |
+        function check_health() {
+          docker exec -t {{ .CONTAINER_NAME }} bash -c "echo 'db.runCommand("ping").ok' | mongo mongo:27017/test --quiet"
+        }
+
+        while [ "$check_health" -gt 0 ]; do
+          sleep 3
+          echo "Mongo is not healthy..."
+        done
+        echo "Mongo is healthy!"
 
   run:nats:
     requires:
@@ -113,7 +146,7 @@ tasks:
         - CONTAINER_NAME
         - PORT
     cmds:
-      - docker run -d --name {{ .CONTAINER_NAME }} -p {{ .PORT }}:4222 nats-streaming
+      - docker run -d --name {{ .CONTAINER_NAME }} -p {{ .PORT }}:4222 nats-streaming --js
 
   healthcheck:nats:
     requires:

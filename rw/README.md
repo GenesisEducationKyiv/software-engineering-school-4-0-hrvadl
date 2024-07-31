@@ -1,6 +1,6 @@
 # Ratewatcher microservice (rw)
 
-This service is responsible for getting latest exchange rate for USD -> UAH. Currently uses [exchange rate](https://app.exchangerate-api.com/) service.
+This service is responsible for getting latest exchange rate for USD -> UAH and submitting it to the queue.
 
 ## Available tasks
 
@@ -38,16 +38,20 @@ If you want to run it as a standalone service you need:
 
 ## App diagram
 
-<img width="881" alt="image" src="https://github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/assets/93580374/86162624-4184-4371-b4af-b1db5768b78c">
+<img width="683" alt="image" src="https://github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/assets/93580374/e458e7d9-c37f-4cd7-bd96-de37e66159d9">
 
 ## Folder structure
 
 1. `pkg` contains possibly reusable package, not binded to this project. Currently it contains only logger utils
 2. `internal`contains packages binded to this project.
-   
+
    - `cfg` contains config which is read from environment vars.
    - `app` is an abstraction with all services initialization.
-   - `transport` contains all transport layer logic: grpc server.
+   - `transport` contains all transport layer logic: grpc server & nats publisher.
    - `service` contains all domain logic
-4. `cmd` contains entrypoints to the program.
-5. `platform` contains specific implementations for querying latest rate exhange, which could change/be changed.
+   - `platform` contains all platform specific implementations, which can change in the future.
+   - `archtest` contains architecture dependency checks.
+   - `models` contains application domains models.
+
+3. `cmd` contains entrypoints to the program.
+4. `platform` contains specific implementations for querying latest rate exhange, which could change/be changed.

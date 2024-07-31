@@ -3,22 +3,29 @@
 package tests
 
 import (
+	"context"
+	"encoding/json"
 	"log/slog"
-	"net"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/mailpit"
-	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v2/mailer"
+	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v3/mailer"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/app"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/cfg"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/platform/db"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/rate"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/subscriber"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/nats/subscriber/sub"
 )
 
 const (
@@ -28,15 +35,168 @@ const (
 	mailerSMTPPortEnvKey     = "MAILER_TEST_SMTP_PORT"
 	mailerTestAPIPortEnvKey  = "MAILER_TEST_API_PORT"
 	mailerTestNatsURL        = "MAILER_NATS_TEST_URL"
+	mailerTestMongoURL       = "MAILER_MONGO_TEST_URL"
 )
 
-// NOTE: I'm not doing component test using Resend mailer.
-// It has quota and I don't wanna exceed it.
-func TestAppRun(t *testing.T) {
-	const topic = "mail"
+const (
+	testHost = "localhost"
+	testPort = "33200"
+)
+
+func TestAppGotSubscribersChangedEvent(t *testing.T) {
+	const (
+		subject    = "subscribers-changed"
+		collection = "subscribers"
+	)
+
 	type args struct {
 		subject string
-		command *pb.MailCommand
+		event   *sub.SubscriberChangedEvent
+	}
+	tests := []struct {
+		name    string
+		args    args
+		setup   func(t *testing.T, db *mongo.Database)
+		want    *subscriber.Subscriber
+		wantErr bool
+	}{
+		{
+			name: "Should save subscriber to DB",
+			args: args{
+				subject: subject,
+				event: &sub.SubscriberChangedEvent{
+					Type:  "subscriber-added",
+					Email: "testinsert@test.com",
+				},
+			},
+			setup: func(*testing.T, *mongo.Database) {},
+			want: &subscriber.Subscriber{
+				Email: "testinsert@test.com",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should not delete subscriber from the DB when it's not present",
+			args: args{
+				subject: subject,
+				event: &sub.SubscriberChangedEvent{
+					Type:  "subscriber-deleted",
+					Email: "test@test.com",
+				},
+			},
+			setup:   func(*testing.T, *mongo.Database) {},
+			wantErr: true,
+		},
+		{
+			name: "Should delete subscriber from the DB",
+			args: args{
+				subject: subject,
+				event: &sub.SubscriberChangedEvent{
+					Type:  "subscriber-deleted",
+					Email: "test@test.com",
+				},
+			},
+			setup: func(t *testing.T, db *mongo.Database) {
+				t.Helper()
+				_, err := db.Collection(collection).
+					InsertOne(context.Background(), subscriber.Subscriber{
+						Email: "test@test.com",
+					})
+				require.NoError(t, err)
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should not allow to do request with the empty body",
+			args: args{
+				subject: subject,
+				event:   &sub.SubscriberChangedEvent{},
+			},
+			setup:   func(*testing.T, *mongo.Database) {},
+			wantErr: true,
+		},
+		{
+			name: "Should not allow to do request with the nil body",
+			args: args{
+				subject: subject,
+				event:   nil,
+			},
+			setup:   func(*testing.T, *mongo.Database) {},
+			wantErr: true,
+		},
+	}
+
+	cfg := mustNewTestConfig(t)
+	nc, js := mustNewNats(t, cfg.NatsURL)
+	app := app.New(cfg, slog.New(slog.NewTextHandler(os.Stdout, nil)))
+	require.NoError(t, app.Run())
+	mongo, err := db.NewConn(context.Background(), cfg.MongoURL)
+	require.NoError(t, err)
+	db := mongo.GetDB()
+
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		app.Stop()
+		nc.Close()
+		require.NoError(t, mongo.Close(ctx))
+	})
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+			defer cancel()
+
+			t.Cleanup(func() {
+				ctx, cancel = context.WithTimeout(context.Background(), time.Second*1)
+				defer cancel()
+				_, err := db.Collection(collection).DeleteMany(ctx, bson.D{})
+				require.NoError(t, err)
+			})
+
+			bytes, err := json.Marshal(tt.args.event)
+			require.NoError(t, err)
+
+			_, err = js.Publish(ctx, subject, bytes)
+			if !tt.wantErr {
+				require.NoError(t, err)
+			}
+
+			subscriber := new(subscriber.Subscriber)
+
+			require.EventuallyWithT(t, func(*assert.CollectT) {
+				err = db.Collection(collection).
+					FindOne(ctx, bson.D{}).
+					Decode(subscriber)
+
+				if tt.wantErr {
+					require.Empty(t, subscriber)
+					require.Error(t, err)
+					return
+				}
+
+				got := *subscriber
+				if tt.want == nil {
+					require.Empty(t, subscriber)
+					return
+				}
+
+				require.NoError(t, err)
+				require.Equal(t, tt.want.Email, got.Email)
+			}, time.Second, time.Millisecond*100)
+		})
+	}
+}
+
+func TestAppGotExchangeEvent(t *testing.T) {
+	const (
+		subject    = "rate-fetched"
+		collection = "rate"
+	)
+
+	type args struct {
+		subject string
+		event   *pb.ExchangeFetchedEvent
 	}
 	tests := []struct {
 		name    string
@@ -44,108 +204,138 @@ func TestAppRun(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Should send emails after receiving mail from topic",
+			name: "Should save exchange to DB",
 			args: args{
-				subject: topic,
-				command: &pb.MailCommand{
+				subject: subject,
+				event: &pb.ExchangeFetchedEvent{
 					EventID:   "1",
-					EventType: "sendMsg",
-					Data: &pb.Mail{
-						To:      []string{"test@test.com"},
-						Subject: "should send to one receiver",
-						Html:    "test HTML",
-					},
+					EventType: "rate-fetched",
+					From:      "USD",
+					To:        "UAH",
+					Rate:      32.2,
 				},
 			},
 		},
 		{
-			name: "Should send emails to multiple receivers after receiving mail from topic",
+			name: "Should ignore unknown event type",
 			args: args{
-				subject: topic,
-				command: &pb.MailCommand{
+				subject: subject,
+				event: &pb.ExchangeFetchedEvent{
 					EventID:   "1",
-					EventType: "sendMsg",
-					Data: &pb.Mail{
-						To:      []string{"test@test.com", "test2@test.com"},
-						Subject: "should send bcc to 2 receivers",
-						Html:    "test HTML",
-					},
+					EventType: "unknown",
+					From:      "USD",
+					To:        "UAH",
+					Rate:      32.3,
 				},
 			},
+			wantErr: true,
 		},
 		{
-			name: "Should return error when mail is not valid",
+			name: "Should not allow to make request with a nil body",
 			args: args{
-				subject: topic,
-				command: &pb.MailCommand{
-					EventID:   "1",
-					EventType: "sendMsg",
-					Data: &pb.Mail{
-						To:      []string{"testest.com"},
-						Subject: "should not send when it's not valid",
-						Html:    "test HTML",
-					},
-				},
+				subject: subject,
+				event:   nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should not allow to make request with an empty body",
+			args: args{
+				subject: subject,
+				event:   &pb.ExchangeFetchedEvent{},
 			},
 			wantErr: true,
 		},
 	}
 
-	const (
-		testHost = "localhost"
-		testPort = "33300"
-	)
+	cfg := mustNewTestConfig(t)
+	nc, _ := mustNewNats(t, cfg.NatsURL)
+	app := app.New(cfg, slog.New(slog.NewTextHandler(os.Stdout, nil)))
+	require.NoError(t, app.Run())
+	mongo, err := db.NewConn(context.Background(), cfg.MongoURL)
+	require.NoError(t, err)
+	db := mongo.GetDB()
 
-	cfg := cfg.Config{
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		nc.Close()
+		app.Stop()
+		require.NoError(t, mongo.Close(ctx))
+	})
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+			defer cancel()
+
+			t.Cleanup(func() {
+				ctx, cancel = context.WithTimeout(context.Background(), time.Second*1)
+				defer cancel()
+				_, err := db.Collection(collection).DeleteMany(ctx, bson.D{})
+				require.NoError(t, err)
+			})
+
+			bytes, err := proto.Marshal(tt.args.event)
+			require.NoError(t, err)
+			_, err = nc.Request(tt.args.subject, bytes, time.Second)
+			require.NoError(t, err)
+
+			exchange := new(rate.Exchange)
+			err = db.Collection(collection).
+				FindOne(ctx, bson.D{}).
+				Decode(exchange)
+
+			if tt.wantErr {
+				require.Empty(t, exchange)
+				require.Error(t, err)
+				return
+			}
+
+			got := *exchange
+			want := tt.args.event
+
+			require.NoError(t, err)
+			require.InDelta(t, want.GetRate(), got.Rate, 2)
+			require.Equal(t, want.GetFrom(), got.From)
+			require.Equal(t, want.GetTo(), got.To)
+		})
+	}
+}
+
+func mustNewNats(t *testing.T, url string) (*nats.Conn, jetstream.JetStream) {
+	t.Helper()
+	nc, err := nats.Connect(url)
+	require.NoError(t, err, "Failed to connect to NATS")
+	js, err := jetstream.New(nc)
+	require.NoError(t, err, "Failed to connect to JetStream")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	_, err = js.CreateStream(
+		ctx,
+		jetstream.StreamConfig{
+			Name:     "DebeziumStream",
+			Subjects: []string{"subscribers-changed"},
+		},
+	)
+	require.NoError(t, err, "Failed to create JetStream")
+
+	return nc, js
+}
+
+func mustNewTestConfig(t *testing.T) cfg.Config {
+	t.Helper()
+	return cfg.Config{
 		MailerFrom:     mustGetEnv(t, mailerSMTPFromEnvKey),
 		MailerHost:     mustGetEnv(t, mailerSMTPHostEnvKey),
 		MailerPassword: mustGetEnv(t, mailerSMTPPortEnvKey),
 		NatsURL:        mustGetEnv(t, mailerTestNatsURL),
 		MailerPort:     mustGetIntEnv(t, mailerSMTPPortEnvKey),
+		MongoURL:       mustGetEnv(t, mailerTestMongoURL),
 		Port:           testPort,
 		Host:           testHost,
-	}
-
-	mp := mailpit.NewClient(cfg.MailerHost, mustGetIntEnv(t, mailerTestAPIPortEnvKey), time.Second)
-	nc, err := nats.Connect(cfg.NatsURL)
-	require.NoError(t, err, "Failed to connect to NATS")
-
-	app := app.New(cfg, slog.Default())
-	go app.MustRun()
-	require.EventuallyWithT(t, func(*assert.CollectT) {
-		checkPortBusy(t, testHost, testPort)
-	}, time.Second, 100*time.Millisecond)
-
-	t.Cleanup(func() {
-		app.Stop()
-	})
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Cleanup(func() {
-				require.NoError(t, mp.DeleteAll(), "Failed to cleanup emails")
-			})
-
-			bytes, err := proto.Marshal(tt.args.command)
-			require.NoError(t, err)
-			_, err = nc.Request(tt.args.subject, bytes, time.Second)
-			require.NoError(t, err)
-
-			require.EventuallyWithT(t, func(*assert.CollectT) {
-				data := tt.args.command.GetData()
-				messages, err := mp.GetAll()
-				require.NoError(t, err)
-				if tt.wantErr {
-					require.Empty(t, messages, 0)
-					return
-				}
-
-				require.Len(t, messages, 1)
-				m := messages[0]
-				require.Equal(t, data.GetSubject(), m.Subject)
-				require.Equal(t, data.GetTo(), getToMails(m.Bcc))
-			}, time.Second, 100*time.Millisecond)
-		})
 	}
 }
 
@@ -161,21 +351,4 @@ func mustGetEnv(t *testing.T, key string) string {
 	env := os.Getenv(key)
 	require.NotEmpty(t, env)
 	return env
-}
-
-func getToMails(to []mailpit.Receipient) []string {
-	mails := make([]string, 0, len(to))
-	for _, t := range to {
-		mails = append(mails, t.Address)
-	}
-	return mails
-}
-
-func checkPortBusy(t *testing.T, host string, port string) {
-	t.Helper()
-	timeout := time.Second
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort(host, port), timeout)
-	require.NoError(t, err)
-	require.NotEmpty(t, conn)
-	require.NoError(t, conn.Close())
 }

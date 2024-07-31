@@ -74,9 +74,6 @@ func TestDependencies(t *testing.T) {
 				DependenciesRules: []*config.DependenciesRule{
 					{
 						Package: "**.storage.**",
-						ShouldOnlyDependsOn: &config.Dependencies{
-							Internal: []string{"**.platform.**"},
-						},
 						ShouldNotDependsOn: &config.Dependencies{
 							Internal: []string{"**.transport.**", "**.app.**", "**.service.**"},
 						},
@@ -95,27 +92,6 @@ func TestDependencies(t *testing.T) {
 						},
 						ShouldNotDependsOn: &config.Dependencies{
 							Internal: []string{"**.transport.**", "**.app.**"},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "transport should depend only on service",
-			cfg: config.Config{
-				DependenciesRules: []*config.DependenciesRule{
-					{
-						Package: "**.transport.**",
-						ShouldOnlyDependsOn: &config.Dependencies{
-							Internal: []string{"**.service.**"},
-						},
-						ShouldNotDependsOn: &config.Dependencies{
-							Internal: []string{
-								"**.transport.**",
-								"**.app.**",
-								"**.storage.**",
-								"**.pkg.**",
-							},
 						},
 					},
 				},

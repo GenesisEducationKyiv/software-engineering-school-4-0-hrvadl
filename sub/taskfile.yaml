@@ -82,19 +82,29 @@ tasks:
 
   test:integration-with-env:
     vars:
-      CONTAINER_NAME: "testdb_mysql"
       MIGRATIONS_SOURCE: "./migrations"
-    cmds:
+      SUB_TEST_NATS_CONTAINER_NAME: "nats-test"
+      SUB_TEST_DB_CONTAINER_NAME: "testdb_mysql"
+    deps:
       - task: create:db
         vars:
-          CONTAINER_NAME: "{{ .CONTAINER_NAME }}"
-      - defer:
-          task: cleanup:db
-          vars:
-            CONTAINER_NAME: "{{ .CONTAINER_NAME }}"
+          CONTAINER_NAME: "{{ .SUB_TEST_DB_CONTAINER_NAME }}"
+      - task: create:nats
+        vars:
+          CONTAINER_NAME: "{{ .SUB_TEST_NATS_CONTAINER_NAME }}"
+          PORT: "{{ .SUB_TEST_NATS_PORT }}"
+    cmds:
       - task: migrate:db
         vars:
           MIGRATIONS_SOURCE: "{{ .MIGRATIONS_SOURCE }}"
+      - defer:
+          task: cleanup:db
+          vars:
+            CONTAINER_NAME: "{{ .SUB_TEST_DB_CONTAINER_NAME }}"
+      - defer:
+          task: cleanup:nats
+          vars:
+            CONTAINER_NAME: "{{ .SUB_TEST_NATS_CONTAINER_NAME }}"
       - go test -tags=integration ./... {{ .CLI_ARGS }}
 
   create:db:
@@ -120,25 +130,65 @@ tasks:
       - task: healthcheck:db
         vars:
           CONTAINER_NAME: "{{ .CONTAINER_NAME }}"
+          PASSWORD: "{{ .SUB_TEST_MYSQL_ROOT_PASSWORD }}"
+
+  create:nats:
+    requires:
+      vars:
+        - CONTAINER_NAME
+        - PORT
+    cmds:
+      - docker run -d --name {{ .CONTAINER_NAME }} -p {{ .PORT }}:4222 nats-streaming --js
+      - task: healthcheck:nats
+        vars:
+          NATS_TEST_PORT: "{{ .PORT }}"
+          CONTAINER_NAME: "{{ .CONTAINER_NAME }}"
+
+  healthcheck:nats:
+    requires:
+      vars:
+        - NATS_TEST_PORT
+        - CONTAINER_NAME
+    cmds:
+      - |
+        function check_health() {
+          docker exec -t {{ .CONTAINER_NAME }} wget http://localhost:8222/healthz -q -S -O -
+        }
+
+        while [ "$check_health" -gt 0 ]; do
+          sleep 3
+          echo "NATS is not healthy..."
+        done
+        echo "NATS is healthy!"
 
   healthcheck:db:
     desc: "Block execution until test db is healthy"
     requires:
       vars:
         - CONTAINER_NAME
+        - PASSWORD
     cmds:
       - |
-        exit_code=0
-        docker exec -t {{ .CONTAINER_NAME }} mysqladmin ping \
-        -h {{ .SUB_TEST_MYSQL_HOSTNAME }} \
-        -uroot -p{{ .SUB_TEST_MYSQL_ROOT_PASSWORD }} || exit_code=1
-        while [ "$exit_code" -gt 0 ]; do
-            sleep 5
-            exit_code=0
-            docker exec -t {{ .CONTAINER_NAME }} mysqladmin ping \
-            -h {{ .SUB_TEST_MYSQL_HOSTNAME }} \
-            -uroot -p{{ .SUB_TEST_MYSQL_ROOT_PASSWORD }} || exit_code=1
+        function check_health() {
+          docker exec -t {{ .CONTAINER_NAME }} mysqladmin ping -p{{ .PASSWORD }} -h localhost | grep "mysqld is alive" 
+        }
+
+        until check_health; do
+          echo "mysql is not healthy..."
+          sleep 3
         done
+        echo "mysql is healthy!"
+        sleep 3
+
+  cleanup:nats:
+    desc: "Cleanup test NATS"
+    requires:
+      vars: [CONTAINER_NAME]
+    cmds:
+      - cmd: docker stop "{{ .CONTAINER_NAME }}"
+        ignore_error: true
+      - cmd: docker rm "{{ .CONTAINER_NAME }}"
+        ignore_error: true
 
   cleanup:db:
     desc: "Cleanup test DB"

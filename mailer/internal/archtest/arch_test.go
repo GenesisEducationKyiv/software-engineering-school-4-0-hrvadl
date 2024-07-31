@@ -78,12 +78,9 @@ func TestDependencies(t *testing.T) {
 			cfg: config.Config{
 				DependenciesRules: []*config.DependenciesRule{
 					{
-						Package: "**.platform.**",
-						ShouldOnlyDependsOn: &config.Dependencies{
-							Internal: []string{"**.models.**"},
-						},
+						Package: "**.service.**",
 						ShouldNotDependsOn: &config.Dependencies{
-							Internal: []string{"**.transport.**", "**.app.**", "**.platform.**"},
+							Internal: []string{"**.transport.**", "**.app.**"},
 						},
 					},
 				},

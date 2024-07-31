@@ -15,6 +15,8 @@ const (
 	exchangeFallbackSecondServiceBaseURLEnvKey = "EXCHANGE_API_FALLBACK2_BASE_URL"
 	exchangeFallbackSecondServiceToken         = "EXCHANGE_API_FALLBACK2_TOKEN" // #nosec G101
 	logLevelEnvKey                             = "EXCHANGE_LOG_LEVEL"
+	natsURLEnvKey                              = "NATS_URL"
+	prometheusPortEnvKey                       = "PROMETHEUS_PORT"
 	portEnvKey                                 = "EXCHANGE_PORT"
 )
 
@@ -84,6 +86,8 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
 				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
 				t.Setenv(exchangeFallbackSecondServiceToken, "token")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want: &Config{
 				LogLevel:                             "debug",
@@ -92,6 +96,8 @@ func TestNewFromEnv(t *testing.T) {
 				ExchangeFallbackServiceBaseURL:       "http://exchange1.com",
 				ExchangeFallbackSecondServiceBaseURL: "http://exchange2.com",
 				ExchangeFallbackSecondServiceToken:   "token",
+				NatsURL:                              "nats://nats:4222",
+				PrometheusPort:                       "2112",
 			},
 			wantErr: false,
 		},
@@ -105,6 +111,8 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
 				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
 				t.Setenv(exchangeFallbackSecondServiceToken, "token")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -119,6 +127,8 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
 				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
 				t.Setenv(exchangeFallbackSecondServiceToken, "token")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -132,6 +142,8 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
 				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
 				t.Setenv(exchangeFallbackSecondServiceToken, "token")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -145,6 +157,8 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
 				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
 				t.Setenv(exchangeFallbackSecondServiceToken, "token")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -158,6 +172,8 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
 				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
 				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://exchange2.com")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
@@ -171,6 +187,23 @@ func TestNewFromEnv(t *testing.T) {
 				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
 				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
 				t.Setenv(exchangeFallbackSecondServiceToken, "token")
+				t.Setenv(natsURLEnvKey, "nats://nats:4222")
+				t.Setenv(prometheusPortEnvKey, "2112")
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Should not parse config when second fallback base URL is missing",
+			setup: func(t *testing.T) {
+				t.Helper()
+				t.Setenv(logLevelEnvKey, "debug")
+				t.Setenv(portEnvKey, "80")
+				t.Setenv(exchangeServiceBaseURLEnvKey, "http://exchange.com")
+				t.Setenv(exchangeFallbackServiceBaseURLEnvKey, "http://exchange1.com")
+				t.Setenv(exchangeFallbackSecondServiceToken, "token")
+				t.Setenv(exchangeFallbackSecondServiceBaseURLEnvKey, "http://url.com")
+				t.Setenv(prometheusPortEnvKey, "2112")
 			},
 			want:    nil,
 			wantErr: true,
