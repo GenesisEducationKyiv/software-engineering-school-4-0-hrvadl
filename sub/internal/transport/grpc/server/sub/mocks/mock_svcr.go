@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	subscriber "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -40,7 +41,7 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // Subscribe mocks base method.
-func (m *MockService) Subscribe(arg0 context.Context, arg1 string) (int64, error) {
+func (m *MockService) Subscribe(arg0 context.Context, arg1 subscriber.Subscriber) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subscribe", arg0, arg1)
 	ret0, _ := ret[0].(int64)
@@ -52,4 +53,18 @@ func (m *MockService) Subscribe(arg0 context.Context, arg1 string) (int64, error
 func (mr *MockServiceMockRecorder) Subscribe(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockService)(nil).Subscribe), arg0, arg1)
+}
+
+// Unsubscribe mocks base method.
+func (m *MockService) Unsubscribe(arg0 context.Context, arg1 subscriber.Subscriber) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Unsubscribe", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Unsubscribe indicates an expected call of Unsubscribe.
+func (mr *MockServiceMockRecorder) Unsubscribe(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unsubscribe", reflect.TypeOf((*MockService)(nil).Unsubscribe), arg0, arg1)
 }

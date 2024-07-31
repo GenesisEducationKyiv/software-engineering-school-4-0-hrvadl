@@ -7,6 +7,8 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/sub/internal/storage/subscriber"
 )
 
 // Register registers subscribe handler to the given GRPC server.
@@ -21,7 +23,8 @@ func Register(srv *grpc.Server, svc Service, log *slog.Logger) {
 
 //go:generate mockgen -destination=./mocks/mock_svcr.go -package=mocks . Service
 type Service interface {
-	Subscribe(ctx context.Context, mail string) (int64, error)
+	Subscribe(ctx context.Context, sub subscriber.Subscriber) (int64, error)
+	Unsubscribe(ctx context.Context, sub subscriber.Subscriber) error
 }
 
 // Server represents subscribe GRPC server
@@ -36,8 +39,20 @@ type Server struct {
 // Subscribe method calls underlying service method and returns an error, in case there was a
 // failure.
 func (s *Server) Subscribe(ctx context.Context, req *pb.SubscribeRequest) (*emptypb.Empty, error) {
-	_, err := s.svc.Subscribe(ctx, req.GetEmail())
+	_, err := s.svc.Subscribe(ctx, subscriber.Subscriber{Email: req.GetEmail()})
 	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
+// Unsubscribe method calls underlying service method and returns an error, in case there was a
+// failure.
+func (s *Server) Unsubscribe(
+	ctx context.Context,
+	req *pb.UnsubscribeRequest,
+) (*emptypb.Empty, error) {
+	if err := s.svc.Unsubscribe(ctx, subscriber.Subscriber{Email: req.GetEmail()}); err != nil {
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil

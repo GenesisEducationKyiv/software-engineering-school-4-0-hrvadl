@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net"
@@ -8,20 +9,31 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/logger"
-	pb "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/protos/gen/go/v1/mailer"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
-	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
+	runner "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/cron"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/pkg/metrics"
+	"github.com/nats-io/nats.go"
 
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/cfg"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/gomail"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/platform/mail/resend"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/cron"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/cron/formatter"
 	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/mail"
-	mailSrv "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/grpc/server/mailer"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/rate"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/service/subscriber"
+	"github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/platform/db"
+	raterepo "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/rate"
+	subrepo "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/storage/subscriber"
+	rateSub "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/nats/subscriber/rate"
+	subSub "github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/mailer/internal/transport/nats/subscriber/sub"
 )
 
 const operation = "app init"
+
+const (
+	sendHours   = 12
+	sendMinutes = 0o0
+)
 
 // New constructs new App with provided arguments.
 // NOTE: than neither cfg or log can't be nil or App will panic.
@@ -36,9 +48,11 @@ func New(cfg cfg.Config, log *slog.Logger) *App {
 // db connections, and GRPC server/clients. Could return an error if any
 // of described above steps failed.
 type App struct {
-	cfg cfg.Config
-	log *slog.Logger
-	srv *grpc.Server
+	cfg     cfg.Config
+	log     *slog.Logger
+	nats    *nats.Conn
+	db      *db.Conn
+	metrics *metrics.Engine
 }
 
 // MustRun is a wrapper around App.Run() function which could be handly
@@ -55,9 +69,18 @@ func (a *App) MustRun() {
 // starts listening on the provided ports. Could return an error if any of
 // described above steps failed.
 func (a *App) Run() error {
-	a.srv = grpc.NewServer(grpc.ChainUnaryInterceptor(
-		logger.NewServerGRPCMiddleware(a.log),
-	))
+	ctx, cancel := context.WithTimeout(context.Background(), a.cfg.ConnectTimeout)
+	defer cancel()
+
+	var err error
+	if a.db, err = db.NewConn(ctx, a.cfg.MongoURL); err != nil {
+		return fmt.Errorf("%s: failed to connect to mongo: %w", operation, err)
+	}
+
+	subscriberRepo := subrepo.NewRepo(a.db.GetDB())
+	subSvc := subscriber.NewService(subscriberRepo)
+	rateRepo := raterepo.NewRepo(a.db.GetDB())
+	rateSvc := rate.NewService(rateRepo)
 
 	resend := resend.NewClient(a.cfg.MailerFromFallback, a.cfg.MailerFallbackToken)
 	gomail := gomail.NewClient(
@@ -70,25 +93,48 @@ func (a *App) Run() error {
 	mailSvc := mail.NewService(gomail)
 	mailSvc.SetNext(resend)
 
-	mailSrv.Register(
-		a.srv,
-		mailSvc,
-		a.log.With(slog.String("source", "mailerSrv")),
-	)
-
-	healthcheck := health.NewServer()
-	healthgrpc.RegisterHealthServer(a.srv, healthcheck)
-	healthcheck.SetServingStatus(
-		pb.MailerService_ServiceDesc.ServiceName,
-		healthgrpc.HealthCheckResponse_SERVING,
-	)
-
-	listener, err := net.Listen("tcp", net.JoinHostPort("", a.cfg.Port))
-	if err != nil {
-		return fmt.Errorf("%s: failed to listen on port %s: %w", operation, a.cfg.Port, err)
+	if a.nats, err = nats.Connect(a.cfg.NatsURL); err != nil {
+		return fmt.Errorf("%s: failed to connect to nats: %w", operation, err)
 	}
 
-	return a.srv.Serve(listener)
+	subSubscriber := subSub.NewSubscriber(a.nats, subSvc, a.log, a.cfg.ConnectTimeout)
+	if err = subSubscriber.Subscribe(); err != nil {
+		return fmt.Errorf("%s: failed to sub to CDC: %w", operation, err)
+	}
+
+	m := rateSub.NewSubscriber(
+		a.nats,
+		rateSvc,
+		a.log.With(slog.String("source", "mailerSrv")),
+		a.cfg.ConnectTimeout,
+	)
+	if err = m.Subscribe(); err != nil {
+		return fmt.Errorf("%s: failed to subscribe: %w", operation, err)
+	}
+
+	a.metrics = metrics.NewEngine(net.JoinHostPort(a.cfg.Host, a.cfg.PrometheusPort))
+	if err := a.metrics.Register(runner.GetMetrics()...); err != nil {
+		return fmt.Errorf("%s: failed to register metrics: %w", operation, err)
+	}
+
+	adp := cron.NewAdapter(
+		rateSvc,
+		subSvc,
+		mailSvc,
+		formatter.NewWithDate(),
+		a.cfg.ConnectTimeout,
+		a.log,
+	)
+	job := runner.NewDailyJob(sendHours, sendMinutes, a.log)
+	job.Do(runner.NewWithMetrics(adp, "mail"))
+
+	go func() {
+		if err := a.metrics.Start(); err != nil {
+			a.log.Error("Failed to serve metrics", slog.Any("err", err))
+		}
+	}()
+
+	return nil
 }
 
 // GracefulStop method gracefully stop the server. It listens to the OS sigals.
@@ -99,6 +145,18 @@ func (a *App) GracefulStop() {
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT)
 	signal := <-ch
 	a.log.Info("Received stop signal. Terminating...", slog.Any("signal", signal))
-	a.srv.Stop()
+	a.Stop()
+}
+
+func (a *App) Stop() {
+	a.nats.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), a.cfg.ConnectTimeout)
+	defer cancel()
+
+	if err := a.db.Close(ctx); err != nil {
+		a.log.Error("Failed to gracefully stop mongo", slog.Any("err", err))
+	}
+
 	a.log.Info("Successfully terminated server. Bye!")
 }

@@ -20,13 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	SubService_Subscribe_FullMethodName = "/sub.v1.SubService/Subscribe"
+	SubService_Unsubscribe_FullMethodName = "/sub.v1.SubService/Unsubscribe"
+	SubService_Subscribe_FullMethodName   = "/sub.v1.SubService/Subscribe"
 )
 
 // SubServiceClient is the client API for SubService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SubServiceClient interface {
+	Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -36,6 +38,16 @@ type subServiceClient struct {
 
 func NewSubServiceClient(cc grpc.ClientConnInterface) SubServiceClient {
 	return &subServiceClient{cc}
+}
+
+func (c *subServiceClient) Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, SubService_Unsubscribe_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *subServiceClient) Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
@@ -52,6 +64,7 @@ func (c *subServiceClient) Subscribe(ctx context.Context, in *SubscribeRequest, 
 // All implementations must embed UnimplementedSubServiceServer
 // for forward compatibility
 type SubServiceServer interface {
+	Unsubscribe(context.Context, *UnsubscribeRequest) (*emptypb.Empty, error)
 	Subscribe(context.Context, *SubscribeRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedSubServiceServer()
 }
@@ -60,6 +73,9 @@ type SubServiceServer interface {
 type UnimplementedSubServiceServer struct {
 }
 
+func (UnimplementedSubServiceServer) Unsubscribe(context.Context, *UnsubscribeRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Unsubscribe not implemented")
+}
 func (UnimplementedSubServiceServer) Subscribe(context.Context, *SubscribeRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
 }
@@ -74,6 +90,24 @@ type UnsafeSubServiceServer interface {
 
 func RegisterSubServiceServer(s grpc.ServiceRegistrar, srv SubServiceServer) {
 	s.RegisterService(&SubService_ServiceDesc, srv)
+}
+
+func _SubService_Unsubscribe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnsubscribeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SubServiceServer).Unsubscribe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SubService_Unsubscribe_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SubServiceServer).Unsubscribe(ctx, req.(*UnsubscribeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _SubService_Subscribe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -101,6 +135,10 @@ var SubService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "sub.v1.SubService",
 	HandlerType: (*SubServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Unsubscribe",
+			Handler:    _SubService_Unsubscribe_Handler,
+		},
 		{
 			MethodName: "Subscribe",
 			Handler:    _SubService_Subscribe_Handler,

@@ -28,6 +28,10 @@ func NewErrorMappingInterceptor() grpc.UnaryServerInterceptor {
 			return res, alreadyExistsToGRPCStatus(err)
 		}
 
+		if errors.Is(err, subSvc.ErrNotExists) {
+			return res, notExistsToGRPCStatus(err)
+		}
+
 		return res, err
 	}
 }
@@ -52,6 +56,22 @@ func alreadyExistsToGRPCStatus(err error) error {
 	s := status.New(codes.Aborted, err.Error())
 	badReq := &pb.BadRequest{
 		Code:        pb.ErrorCode_ERROR_CODE_ALREADY_EXISTS,
+		Field:       "email",
+		Description: err.Error(),
+	}
+
+	s, err = s.WithDetails(badReq)
+	if err != nil {
+		return err
+	}
+
+	return s.Err()
+}
+
+func notExistsToGRPCStatus(err error) error {
+	s := status.New(codes.Aborted, err.Error())
+	badReq := &pb.BadRequest{
+		Code:        pb.ErrorCode_ERROR_CODE_NOT_EXISTS,
 		Field:       "email",
 		Description: err.Error(),
 	}

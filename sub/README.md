@@ -1,6 +1,6 @@
 # Subscriber microservice (sub)
 
-This service is responsible for saving subscribers to the DB and running a cron job to trigger mail send once a day at 12:00 UTC.
+This service is responsible for saving/deleting subscribers to the DB.
 
 ## Available tasks
 
@@ -38,7 +38,7 @@ If you want to run it as a standalone service you need:
 
 ## App diagram
 
-<img width="930" alt="image" src="https://github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/assets/93580374/eade84a7-314d-479b-a998-91974a59a118">
+<img width="471" alt="image" src="https://github.com/GenesisEducationKyiv/software-engineering-school-4-0-hrvadl/assets/93580374/e1d97f88-ad6b-496e-9746-e7d28991892e">
 
 ## Folder structure
 
@@ -47,8 +47,10 @@ If you want to run it as a standalone service you need:
 
    - `cfg` contains config which is read from environment vars.
    - `app` is an abstraction with all services initialization.
-   - `transport` contains all transport layer logic: grpc server and clients.
+   - `transport` contains all transport layer logic: grpc server.
    - `service` contains all services with domain logic.
-   - `storage` contains everything related to the persistance layer: connection to db logic & repositories.
-4. `cmd` contains entrypoints to the program.
-5. `migrations` contains db migrations which is run on service start-up.
+   - `storage` contains everything related to the persistance layer: connection to db logic & repositories with domain models.
+   - `archtest` contains architecture dependency checks.
+
+3. `cmd` contains entrypoints to the program.
+4. `migrations` contains db migrations which is run on service start-up.
